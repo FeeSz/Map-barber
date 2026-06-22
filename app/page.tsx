@@ -26,6 +26,7 @@ function BarberMarker({ logoUrl, nome, isActive }: MarkerProps) {
   );
 }
 
+
 // --- INTERFACES ---
 interface Barbearia {
   id: string;
