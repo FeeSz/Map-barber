@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -11,9 +10,14 @@ interface MarkerProps {
   isActive: boolean;
 }
 
+
 function BarberMarker({ logoUrl, nome, isActive }: MarkerProps) {
   return (
-    <div className={`premium-marker ${isActive ? "marker-active" : ""}`}>
+<div
+  className={`premium-marker ${
+    isActive ? "marker-active" : ""
+  }`}
+>
       <div className="pulse-glow" />
       <div className="marker-logo-container">
         <img
@@ -124,8 +128,9 @@ export default function MapaPage() {
         container: mapContainerRef.current,
         style: MAP_STYLE,
         center: [-46.666, -23.565],
-        zoom: 13.5,
-        pitch: 0,
+        zoom: 17.5,
+        pitch: 300,
+        bearing: -15,
         attributionControl: false, // evita double-render do attribution
       });
 
@@ -173,14 +178,21 @@ export default function MapaPage() {
 
         wrapper.addEventListener("click", () => {
           setFilialAtiva(barbearia.id);
-          mapa.flyTo({
-            center: barbearia.coordenadas,
-            zoom: 15.5,
-            essential: true,
-          });
+mapa.flyTo({
+  center: barbearia.coordenadas,
+  zoom: 15.5,
+  pitch: 55,
+  bearing: -20,
+  speed: 0.8,
+  curve: 1.4,
+  essential: true,
+});
         });
 
-        const marker = new maplibregl.default.Marker({ element: wrapper })
+        const marker = new maplibregl.default.Marker({
+  element: wrapper,
+  anchor: "bottom",
+})
           .setLngLat(barbearia.coordenadas)
           .addTo(mapa);
 
@@ -202,9 +214,13 @@ export default function MapaPage() {
   const focarNaBarbearia = (barbearia: Barbearia) => {
     setFilialAtiva(barbearia.id);
     mapRef.current?.flyTo({
-      center: barbearia.coordenadas,
-      zoom: 15.5,
-      essential: true,
+center: barbearia.coordenadas,
+  zoom: 18.9,
+  pitch: 55,
+  bearing: -20,
+  speed: 0.8,
+  curve: 1.4,
+  essential: true,
     });
   };
 
@@ -237,19 +253,52 @@ export default function MapaPage() {
       </div>
 
       {/* SIDEBAR */}
-      <aside className="map-sidebar">
-        <div>
-          <h1 className="map-title">Minhas Filiais</h1>
-          <p className="map-subtitle">Ecossistema de Gestão de Unidades</p>
+<aside className="map-sidebar">
+
+  <div className="sidebar-header">
+    <h1 className="map-title">Nossas Filiais</h1>
+
+    <p className="map-subtitle">
+      Encontre a unidade ideal para seu atendimento
+    </p>
+
+    <div className="stats-grid">
+      <div className="stat-card">
+        <div className="stat-value">
+          {filiais.length}
         </div>
 
+        <div className="stat-label">
+          Filiais
+        </div>
+      </div>
+
+      <div className="stat-card">
+        <div className="stat-value">
+          {(
+            filiais.reduce(
+              (acc, item) => acc + item.avaliacao,
+              0
+            ) / filiais.length
+          ).toFixed(1)}
+        </div>
+
+        <div className="stat-label">
+          Avaliação
+        </div>
+      </div>
+    </div>
+  </div>
+
+
         {/* FILTROS */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-none">
+        <div className="px-5 pt-4 pb-2">
+  <div className="flex gap-2 overflow-x-auto scrollbar-none"></div>
           {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
             <button
               key={tag}
               onClick={() => setFiltroTag(filtroTag === tag ? null : tag)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
+              className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
                 filtroTag === tag
                   ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
                   : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
