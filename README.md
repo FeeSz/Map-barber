@@ -1,6 +1,8 @@
+<div align="center">
+
 # 🗺️ BarberMap 3D
 
-<div align="center">
+### Interactive 3D Map Experience for Barber Shops
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=nextdotjs)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
@@ -276,16 +278,30 @@ npm start
 
 ---
 
-# 👨‍💻 Autor
+# 👥 Equipe
 
-**Felype Souza**
-🔗 GitHub: https://github.com/FeeSz
----
+<div align="center">
 
-# 👨‍💻 Colaborador
+| Desenvolvedor | Função |
+|--------------|---------|
+| **Felype Souza** | Desenvolvimento do módulo 3D, arquitetura do mapa e implementação técnica |
+| **Kaio Cotrim** | Integração com o projeto principal Régua Maximum |
 
-**Kaio Contrim**
-🔗 https://github.com/kaiocotrim
+</div>
+
+<div align="center">
+
+### 🔗 GitHub
+
+**Felype Souza**  
+https://github.com/FeeSz
+
+<br>
+
+**Kaio Cotrim**  
+https://github.com/kaiocotrim
+
+</div>
 
 
 
