@@ -1,38 +1,19 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-export default function Map3D() {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MapLibreMap | null>(null);
+interface Branch {
+  id: number;
+  name: string;
+  distance: string;
+  status: string;
+  occupancy: number;
+  coordinates: [number, number];
+}
 
-  useEffect(() => {
-    if (!mapContainer.current || mapRef.current) return;
-
-    let destroyed = false;
-
-    async function init() {
-      const maplibregl = await import('maplibre-gl');
-
-      if (destroyed) return;
-
-      const map = new maplibregl.Map({
-        container: mapContainer.current,
-        style: 'https://tiles.openfreemap.org/styles/liberty',
-        center: [-46.6333, -23.5505],
-        zoom: 11,
-        pitch: 60,
-        bearing: -20,
-      });
-
-      map.addControl(
-        new maplibregl.NavigationControl(),
-        'top-right'
-      );
-
-     const branches = [
+const BRANCHES: Branch[] = [
   {
     id: 1,
     name: 'Black Diamond Centro',
@@ -41,7 +22,6 @@ export default function Map3D() {
     occupancy: 35,
     coordinates: [-46.6333, -23.5505],
   },
-
   {
     id: 2,
     name: 'Black Diamond Moema',
@@ -50,7 +30,6 @@ export default function Map3D() {
     occupancy: 70,
     coordinates: [-46.668, -23.601],
   },
-
   {
     id: 3,
     name: 'Black Diamond Paulista',
@@ -61,27 +40,99 @@ export default function Map3D() {
   },
 ];
 
-      branches.forEach((branch) => {
-const marker = document.createElement("div");
+export default function Map3D() {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapLibreMap | null>(null);
 
-marker.innerHTML = `
-<div class="premium-marker">
-  <div class="pulse"></div>
-  <div class="icon">💈</div>
-</div>
-`;
+  const [search, setSearch] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState<number | null>(null);
 
-        new maplibregl.Marker({
-          element: marker,
-        })
-          .setLngLat(branch.coordinates as [number, number])
-          .addTo(map);
-      });
+  useEffect(() => {
+    const container = mapContainerRef.current;
 
-      mapRef.current = map;
+    if (!container || mapRef.current) return;
+
+    let destroyed = false;
+
+    async function initMap() {
+      try {
+        const maplibregl = await import('maplibre-gl');
+
+        if (destroyed) return;
+
+        const map = new maplibregl.Map({
+          container,
+          style: 'https://tiles.openfreemap.org/styles/liberty',
+          center: [-46.6333, -23.5505],
+          zoom: 11,
+          pitch: 60,
+          bearing: -20,
+          attributionControl: false,
+          failIfMajorPerformanceCaveat: false,
+        });
+
+        map.addControl(
+          new maplibregl.NavigationControl(),
+          'top-right'
+        );
+
+        map.on('load', () => {
+          BRANCHES.forEach((branch) => {
+            const markerElement = document.createElement('div');
+
+            markerElement.className = 'premium-marker';
+            markerElement.style.cursor = 'pointer';
+
+            markerElement.innerHTML = `
+              <div class="pulse-glow"></div>
+              <div class="marker-logo-container">
+                <div style="
+                  width:100%;
+                  height:100%;
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  font-size:24px;
+                ">
+                  💈
+                </div>
+              </div>
+            `;
+
+            markerElement.addEventListener('click', () => {
+              setSelectedBranch(branch.id);
+
+              map.flyTo({
+                center: branch.coordinates,
+                zoom: 17,
+                pitch: 60,
+                bearing: -20,
+                speed: 0.8,
+                curve: 1.4,
+                essential: true,
+              });
+            });
+
+            new maplibregl.Marker({
+              element: markerElement,
+              anchor: 'bottom',
+            })
+              .setLngLat(branch.coordinates)
+              .addTo(map);
+          });
+        });
+
+        map.on('error', (event: any) => {
+          console.error('[MapLibre Error]', event);
+        });
+
+        mapRef.current = map;
+      } catch (error) {
+        console.error('Erro ao carregar MapLibre:', error);
+      }
     }
 
-    init();
+    initMap();
 
     return () => {
       destroyed = true;
@@ -93,67 +144,133 @@ marker.innerHTML = `
     };
   }, []);
 
+  const filteredBranches = BRANCHES.filter((branch) =>
+    branch.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const focusBranch = (branch: Branch) => {
+    setSelectedBranch(branch.id);
+
+    mapRef.current?.flyTo({
+      center: branch.coordinates,
+      zoom: 17,
+      pitch: 60,
+      bearing: -20,
+      speed: 0.8,
+      curve: 1.4,
+      essential: true,
+    });
+  };
+
   return (
     <>
       <div className="floating-search">
         <input
+          type="text"
           placeholder="Buscar unidade ou bairro..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
-      <div className="map-sidebar">
-        <div className="map-header">
-          <div className="map-title">
-            💈 BarberMap
-          </div>
+      <aside className="map-sidebar">
+        <div className="sidebar-header">
+          <h1 className="map-title">💈 BarberMap</h1>
 
-          <div className="map-subtitle">
-            Encontre sua unidade
+          <p className="map-subtitle">
+            Encontre sua unidade ideal
+          </p>
+
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-value">
+                {BRANCHES.length}
+              </div>
+
+              <div className="stat-label">
+                Unidades
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-value">
+                {
+                  BRANCHES.filter(
+                    (b) => b.status === 'Aberta'
+                  ).length
+                }
+              </div>
+
+              <div className="stat-label">
+                Abertas
+              </div>
+            </div>
           </div>
 
           <input
             className="search-input"
             placeholder="Pesquisar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         <div className="branch-list">
-          <div className="branch-card">
-            <div className="branch-name">
-              Barbearia Centro
-            </div>
+          {filteredBranches.map((branch) => (
+            <div
+              key={branch.id}
+              className={`branch-card ${
+                selectedBranch === branch.id
+                  ? 'active'
+                  : ''
+              }`}
+              onClick={() => focusBranch(branch)}
+            >
+              <div className="branch-header">
+                <div className="branch-name">
+                  {branch.name}
+                </div>
 
-            <div className="branch-distance">
-              1.2 km
-            </div>
+                <div className="branch-rating-badge">
+                  {branch.occupancy}%
+                </div>
+              </div>
 
-            <div className="branch-status">
-              Aberta agora
-            </div>
-          </div>
+              <div className="branch-meta-row">
+                <div className="branch-distance">
+                  {branch.distance}
+                </div>
 
-          <div className="branch-card">
-            <div className="branch-name">
-              Barbearia Moema
-            </div>
+                <div className="branch-live-occupancy">
+                  <span
+                    className={`occupancy-dot ${
+                      branch.occupancy > 85
+                        ? 'busy'
+                        : ''
+                    }`}
+                  />
 
-            <div className="branch-distance">
-              2.8 km
+                  <span>
+                    {branch.status}
+                  </span>
+                </div>
+              </div>
             </div>
+          ))}
 
-            <div className="branch-status">
-              Aberta agora
+          {filteredBranches.length === 0 && (
+            <div className="branch-card">
+              <div className="branch-name">
+                Nenhuma unidade encontrada
+              </div>
             </div>
-          </div>
+          )}
         </div>
-      </div>
+      </aside>
 
       <div
-        ref={mapContainer}
-        style={{
-          width: '100vw',
-          height: '100vh',
-        }}
+        ref={mapContainerRef}
+        className="absolute inset-0 w-screen h-screen"
       />
     </>
   );
