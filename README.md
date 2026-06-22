@@ -1,36 +1,296 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🗺️ BarberMap 3D
 
-## Getting Started
+<div align="center">
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=nextdotjs)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript)
+![MapLibre](https://img.shields.io/badge/MapLibre-3D_Map-396CB2?style=for-the-badge)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs)
+![Status](https://img.shields.io/badge/Status-Development-orange?style=for-the-badge)
+
+Sistema de geolocalização e descoberta de barbearias utilizando mapa interativo 3D, busca inteligente e visualização moderna de unidades.
+
+</div>
+
+---
+
+# 📖 Sobre o Projeto
+
+O **BarberMap 3D** é uma aplicação web desenvolvida para facilitar a localização e visualização de unidades de barbearias em um mapa interativo.
+
+O sistema combina recursos de geolocalização, experiência visual moderna e renderização 3D para proporcionar uma navegação intuitiva e diferenciada.
+
+---
+
+# ✨ Funcionalidades
+
+### 🗺️ Mapa Interativo
+
+- Visualização em mapa 3D
+- Navegação fluida
+- Zoom dinâmico
+- Rotação e inclinação do mapa
+- Controles integrados de navegação
+
+### 💈 Marcadores Personalizados
+
+- Marcadores premium animados
+- Exibição de logotipo da unidade
+- Destaque visual para unidade selecionada
+- Efeito de glow e pulse
+
+### 🔍 Busca Inteligente
+
+- Busca por unidade
+- Busca por bairro
+- Busca por região
+
+### 🏪 Gestão de Filiais
+
+- Nome da unidade
+- Distância estimada
+- Status de ocupação
+- Avaliações
+- Tags personalizadas
+
+### 📊 Informações em Tempo Real
+
+- Ocupação da unidade
+- Avaliação média
+- Indicadores visuais
+- Destaques para unidades premium
+
+---
+
+# 🛠️ Stack Tecnológica
+
+## Front-End
+
+<p align="left">
+<img src="https://skillicons.dev/icons?i=nextjs,react,ts" />
+</p>
+
+## Mapas e Geolocalização
+
+- MapLibre GL
+- OpenStreetMap
+- OpenFreeMap
+
+## Renderização 3D
+
+<p align="left">
+<img src="https://skillicons.dev/icons?i=threejs" />
+</p>
+
+### Bibliotecas Utilizadas
+
+- @react-three/fiber
+- @react-three/drei
+- Framer Motion
+- Floating UI
+- Lucide React
+
+---
+
+# 🏗️ Arquitetura
+
+```text
+map3d-test/
+
+├── app/
+│   ├── page.tsx
+│   ├── layout.tsx
+│   ├── globals.css
+│   └── data/
+│
+├── components/
+│   ├── Map3D.tsx
+│   ├── Marker3D.tsx
+│   ├── Sidebar.tsx
+│   │
+│   ├── booking/
+│   ├── map/
+│   ├── sidebar/
+│   ├── three/
+│   └── ui/
+│
+├── public/
+│
+├── next.config.ts
+├── package.json
+└── README.md
+```
+
+---
+
+# 🔄 Fluxo da Aplicação
+
+```mermaid
+flowchart TD
+
+A[Usuário] --> B[Abrir Aplicação]
+
+B --> C[Carregamento do Mapa]
+
+C --> D[Renderização das Filiais]
+
+D --> E[Marcadores 3D]
+
+E --> F[Busca ou Seleção]
+
+F --> G[Exibir Informações]
+
+G --> H[Interação com Unidade]
+```
+
+---
+
+# 💈 Estrutura das Barbearias
+
+Cada unidade possui:
+
+```typescript
+{
+  id: string;
+  nome: string;
+  logoUrl: string;
+  distancia: string;
+  statusOcupacao: string;
+  porcentagemOcupacao: number;
+  avaliacao: number;
+  coordenadas: [longitude, latitude];
+  tags: string[];
+}
+```
+
+---
+
+# 📍 Dados Exibidos
+
+### Unidade
+
+- Nome
+- Logo
+- Distância
+
+### Operação
+
+- Status de ocupação
+- Percentual de lotação
+
+### Avaliação
+
+- Atendimento
+- Ambiente
+- Higiene
+- Nota geral
+
+---
+
+# 🚀 Instalação
+
+## Clonar Repositório
+
+```bash
+git clone <repositorio>
+```
+
+## Instalar Dependências
+
+```bash
+npm install
+```
+
+ou
+
+```bash
+npm install --legacy-peer-deps
+```
+
+---
+
+## Executar Ambiente Local
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+# 📦 Build de Produção
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+# 🎯 Objetivos do Projeto
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Melhorar a experiência de localização de unidades
+- Oferecer navegação visual moderna
+- Explorar mapas 3D em aplicações web
+- Integrar recursos de geolocalização
+- Criar uma interface premium para clientes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+# 🚧 Roadmap
+
+## Interface
+
+- [ ] Modo escuro
+- [ ] Responsividade mobile avançada
+- [ ] Sidebar dinâmica
+
+## Mapa
+
+- [ ] Rotas até a unidade
+- [ ] Geolocalização do usuário
+- [ ] Clustering de marcadores
+- [ ] Heatmap de ocupação
+
+## Integrações
+
+- [ ] API de barbearias
+- [ ] Banco de dados
+- [ ] Atualização em tempo real
+- [ ] Sistema de agendamentos
+
+## 3D
+
+- [ ] Modelos 3D das unidades
+- [ ] Efeitos avançados de iluminação
+- [ ] Animações contextuais
+
+---
+
+# 👨‍💻 Autor
+
+**Felype Souza**
+🔗 GitHub: https://github.com/FeeSz
+---
+
+# 👨‍💻 Colaborador
+
+**Kaio Contrim**
+🔗 https://github.com/kaiocotrim
+
+
+
+---
+
+# 📄 Licença
+
+Este projeto está licenciado sob a Licença MIT.
