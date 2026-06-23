@@ -5,6 +5,10 @@ import { createPortal } from "react-dom";
 import { motion, useDragControls } from "framer-motion";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { useGeolocation } from './hooks/useGeolocation';
+import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
+import { fetchRoute } from './utils/fetchRoute';
+
 // ======================================================
 // COMPONENTE DO MARCADOR
 // ======================================================
@@ -52,12 +56,8 @@ interface Barbearia {
 }
 
 // ======================================================
-
 // DADOS MOCK - Expandido com 5 novas barbearias em SP
-// SITE PARA CONSULTAR CORDENADAS - https://nominatim.openstreetmap.org/ui/search.html
-
 // ======================================================
-
 
 const filiaisExemplo: Barbearia[] = [
   {
@@ -69,11 +69,10 @@ const filiaisExemplo: Barbearia[] = [
     porcentagemOcupacao: 55,
     avaliacao: 4.8,
     detalhesAvaliacao: { atendimento: 5.0, ambiente: 5.0, higiene: 5.0 },
-    coordenadas: [-46.6235237, -23.510714], // Zona Norte / Santana
+    coordenadas: [-46.6235237, -23.510714], 
     tags: ["Mais Próximas", "Premium"],
-    },
-    {
-
+  },
+  {
     id: "2",
     nome: "Barbearia Corleone - Jardins",
     logoUrl: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=150&h=150&fit=crop&q=80",
@@ -85,7 +84,6 @@ const filiaisExemplo: Barbearia[] = [
     coordenadas: [-46.6624, -23.5616],
     tags: ["Abertas", "Premium"],
   },
-
   {
     id: "3",
     nome: "Seu Elias",
@@ -107,7 +105,7 @@ const filiaisExemplo: Barbearia[] = [
     porcentagemOcupacao: 65,
     avaliacao: 4.8,
     detalhesAvaliacao: { atendimento: 4.9, ambiente: 4.8, higiene: 4.8 },
-    coordenadas: [-46.6433, -23.5558], // Região Central / Bela Vista
+    coordenadas: [-46.6433, -23.5558], 
     tags: ["Abertas", "Mais Próximas"],
   },
   {
@@ -119,7 +117,7 @@ const filiaisExemplo: Barbearia[] = [
     porcentagemOcupacao: 40,
     avaliacao: 4.6,
     detalhesAvaliacao: { atendimento: 4.7, ambiente: 4.8, higiene: 4.5 },
-    coordenadas: [-46.6853, -23.5642], // Zona Oeste / Pinheiros
+    coordenadas: [-46.6853, -23.5642], 
     tags: ["Abertas", "Premium"],
   },
   {
@@ -131,7 +129,7 @@ const filiaisExemplo: Barbearia[] = [
     porcentagemOcupacao: 85,
     avaliacao: 4.9,
     detalhesAvaliacao: { atendimento: 5.0, ambiente: 4.9, higiene: 4.9 },
-    coordenadas: [-46.6661, -23.6025], // Zona Sul / Moema
+    coordenadas: [-46.6661, -23.6025], 
     tags: ["Premium"],
   },
   {
@@ -143,7 +141,7 @@ const filiaisExemplo: Barbearia[] = [
     porcentagemOcupacao: 15,
     avaliacao: 4.5,
     detalhesAvaliacao: { atendimento: 4.6, ambiente: 4.4, higiene: 4.7 },
-    coordenadas: [-46.5742, -23.5412], // Zona Leste / Tatuapé
+    coordenadas: [-46.5742, -23.5412], 
     tags: ["Abertas"],
   },
 ];
@@ -153,6 +151,9 @@ const filiaisExemplo: Barbearia[] = [
 // ======================================================
 
 export default function MapaPage() {
+  const { coords } = useGeolocation();
+  const [rotaAtivaId, setRotaAtivaId] = useState<string | null>(null);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const dragControls = useDragControls();
   
@@ -175,7 +176,7 @@ export default function MapaPage() {
   const userProfilePic = "https://i.pravatar.cc/150?img=11"; 
 
   // ======================================================
-  // MAPA
+  // MAPA - INICIALIZAÇÃO
   // ======================================================
 
   useEffect(() => {
@@ -200,7 +201,13 @@ export default function MapaPage() {
 
       mapRef.current = mapaInstancia;
 
-      mapaInstancia.on("load", () => setMapaPronto(true));
+      mapaInstancia.on("load", () => {
+        setMapaPronto(true);
+        // Inicializa as camadas de rota e do usuário
+        initRouteLayers(mapaInstancia);
+        initUserLocationLayers(mapaInstancia);
+      });
+
       mapaInstancia.on("error", (e: any) => {
         if (e?.error?.message?.includes("Failed to fetch")) return;
         console.error("[MapLibre]", e);
@@ -214,6 +221,23 @@ export default function MapaPage() {
       }
     };
   }, []);
+
+  // ======================================================
+  // GEOLOCALIZAÇÃO EM TEMPO REAL (ATUALIZAÇÃO DO PONTO)
+  // ======================================================
+  
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map && coords && mapaPronto) {
+      const source = map.getSource('user-location') as any;
+      if (source) {
+        source.setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: coords }, properties: {} }]
+        });
+      }
+    }
+  }, [coords, mapaPronto]);
 
   // ======================================================
   // MARCADORES E ENQUADRAMENTO
@@ -237,16 +261,7 @@ export default function MapaPage() {
         wrapper.className = "map-marker-wrapper";
 
         wrapper.addEventListener("click", () => {
-          setFilialAtiva(barbearia.id);
-          mapa.flyTo({
-            center: barbearia.coordenadas,
-            zoom: 17.2,
-            pitch: 55,
-            bearing: -20,
-            speed: 0.8,
-            curve: 1.4,
-            essential: true,
-          });
+          handleSelecionarUnidade(barbearia);
         });
 
         const marker = new maplibregl.default.Marker({
@@ -279,6 +294,10 @@ export default function MapaPage() {
     };
   }, [mapaPronto, filiais]);
 
+  // ======================================================
+  // FUNÇÕES DE FOCO, SELEÇÃO E ROTAS
+  // ======================================================
+
   const focarNaBarbearia = (barbearia: Barbearia) => {
     setFilialAtiva(barbearia.id);
     mapRef.current?.flyTo({
@@ -292,9 +311,61 @@ export default function MapaPage() {
     });
   };
 
+  const handleSelecionarUnidade = async (barbearia: Barbearia) => {
+    focarNaBarbearia(barbearia);
+
+    if (!coords) {
+      console.info('Aguardando sua localização...');
+      return;
+    }
+
+    const map = mapRef.current;
+    if (!map) return;
+
+    const routeSource = map.getSource('route') as any;
+    if (routeSource) {
+      // Limpa rota anterior rapidamente
+      routeSource.setData({ type: 'FeatureCollection', features: [] });
+    }
+
+    const routeFeature = await fetchRoute(coords, barbearia.coordenadas);
+    
+    if (routeFeature && routeSource) {
+      routeSource.setData({
+        type: 'FeatureCollection',
+        features: [routeFeature]
+      });
+
+      import("maplibre-gl").then((maplibregl) => {
+        const bounds = new maplibregl.default.LngLatBounds();
+        // Adiciona as coordenadas da rota ao bound para dar zoom correto
+        routeFeature.geometry.coordinates.forEach((coord: any) => {
+          bounds.extend(coord as [number, number]);
+        });
+        
+        map.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 60, right: 60 }, maxZoom: 16, duration: 1000 });
+      });
+      
+      setRotaAtivaId(barbearia.id);
+    }
+  };
+
+  const limparRota = () => {
+    const map = mapRef.current;
+    if (map) {
+      const source = map.getSource('route') as any;
+      if (source) source.setData({ type: 'FeatureCollection', features: [] });
+    }
+    setRotaAtivaId(null);
+  };
+
   const filiaisFiltradas = filiais
     .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
     .filter((f) => !filtroTag || f.tags.includes(filtroTag));
+
+  // ======================================================
+  // RENDERIZAÇÃO
+  // ======================================================
 
   return (
     <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
@@ -344,7 +415,7 @@ export default function MapaPage() {
         }}
         transition={{ type: "spring", damping: 22, stiffness: 280 }}
       >
-        {/* ÁREA ARRASTÁVEL SUPERIOR (Todo o Header e Filtros) */}
+        {/* ÁREA ARRASTÁVEL SUPERIOR */}
         <div 
           className="flex flex-col flex-shrink-0 cursor-grab active:cursor-grabbing w-full"
           onPointerDown={(e) => dragControls.start(e)}
@@ -355,9 +426,35 @@ export default function MapaPage() {
           </div>
 
           <div className="sidebar-header">
+            {/* TEXTOS E ELEMENTOS EXCLUSIVOS DO DESKTOP */}
             <div className="hidden md:block">
+              {/* BOTÃO VOLTAR DO HEADER DESKTOP */}
+              <button 
+                onClick={() => {
+                  window.history.back(); 
+                }}
+                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors cursor-pointer mb-5 text-sm font-medium tracking-wide select-none group"
+              >
+                <svg 
+                  width="18" 
+                  height="18" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="transform group-hover:-translate-x-0.5 transition-transform"
+                >
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Voltar
+              </button>
+
               <h1 className="map-title">Nossas Filiais</h1>
               <p className="map-subtitle">Encontre a unidade ideal para seu atendimento</p>
+              
               <div className="stats-grid">
                 <div className="stat-card">
                   <div className="stat-value">{filiais.length}</div>
@@ -392,7 +489,7 @@ export default function MapaPage() {
           </div>
         </div>
 
-        {/* ÁREA DA LISTA (Com rolagem interna e arraste nos espaços vazios) */}
+        {/* ÁREA DA LISTA E BOTÃO DE LIMPAR ROTA */}
         <div 
           className="branch-list"
           onPointerDown={(e) => {
@@ -401,14 +498,33 @@ export default function MapaPage() {
             }
           }}
         >
+          {rotaAtivaId && (
+            <div className="mb-2">
+              <button 
+                onClick={limparRota}
+                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-500/20 transition-all cursor-pointer"
+              >
+                ✕ Limpar rota ativa
+              </button>
+            </div>
+          )}
+
           {filiaisFiltradas.map((barbearia) => {
-            const isActive = filialAtiva === barbearia.id;
+            const isRouteActive = rotaAtivaId === barbearia.id;
+            // Se esta é a barbearia selecionada para a rota, o outline fica verde
+            const highlightClass = isRouteActive 
+                ? 'border-[#a3e635] shadow-[0_0_15px_rgba(163,230,53,0.15)] bg-white/10' 
+                : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10';
+
             return (
               <div
                 key={barbearia.id}
-                className={`branch-card ${isActive ? "active" : ""}`}
-                onClick={() => focarNaBarbearia(barbearia)}
+                className={`branch-card transition-all duration-300 border ${highlightClass}`}
+                onClick={() => handleSelecionarUnidade(barbearia)}
               >
+                {/* Linha colorida lateral (preservada do seu CSS original) */}
+                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-[#a3e635] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ opacity: isRouteActive ? 1 : undefined }}></div>
+
                 <div className="branch-header">
                   <h3 className="branch-name">{barbearia.nome}</h3>
                   <div className="branch-rating-badge">
@@ -425,7 +541,7 @@ export default function MapaPage() {
                   </div>
                 </div>
 
-                {isActive && (
+                {filialAtiva === barbearia.id && (
                   <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                     <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-white/60">
                       <div className="bg-white/5 p-2 rounded-lg">

@@ -353,21 +353,40 @@ html, body {
 .mobile-sheet-handle-area { display: none; }
 
 .stats-grid {
-  display: grid;
+  display: none;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 20px;
+  gap: 14px;
+  margin-top: 24px;
 }
 
 .stat-card {
-  padding: 14px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 16px 20px;
+  border-radius: 20px;
+  
+  /* Cor interna escura combinando com a imagem */
+  background: rgba(26, 26, 26, 0.45);
+  
+  /* Borda dourada fina e sofisticada da imagem de referência */
+  border: 1px solid rgba(197, 160, 89, 0.35); 
+  
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.stat-value { font-size: 22px; font-weight: 700; color: white; }
-.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #8a8a8a; }
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+}
+.stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8f8f8f;
+  font-weight: 600;
+}
 
 .filter-container { padding: 18px 20px 10px; }
 
@@ -418,12 +437,12 @@ html, body {
     background-color: rgba(255, 255, 255, 0.6);
   }
 
-  .sidebar-header {
-    padding: 0;
-    border-bottom: none;
-    background: transparent;
-    backdrop-filter: none;
-  }
+.sidebar-header {
+  z-index: 10;
+  padding: 32px 24px 16px 24px;
+  background: transparent; 
+  border-bottom: none;
+}
 
   .filter-container {
     padding: 4px 20px 16px;
