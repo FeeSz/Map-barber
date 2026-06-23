@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion, useDragControls } from "framer-motion";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // ======================================================
@@ -60,7 +61,7 @@ interface Barbearia {
 }
 
 // ======================================================
-// DADOS MOCK
+// DADOS MOCK - Atualizado com imagens (Logos) reais
 // ======================================================
 
 const filiaisExemplo: Barbearia[] = [
@@ -68,7 +69,7 @@ const filiaisExemplo: Barbearia[] = [
     id: "1",
     nome: "Barbearia Corleone - Jardins",
     logoUrl:
-      "https://placehold.co/64x64/1a1a1a/a3e635?text=BC",
+      "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=150&h=150&fit=crop&q=80",
     distancia: "1.2 km",
     statusOcupacao: "tranquilo",
     porcentagemOcupacao: 25,
@@ -85,7 +86,7 @@ const filiaisExemplo: Barbearia[] = [
     id: "2",
     nome: "Seu Elias - Premium",
     logoUrl:
-      "https://placehold.co/64x64/1a1a1a/a3e635?text=SE",
+      "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&h=150&fit=crop&q=80",
     distancia: "3.8 km",
     statusOcupacao: "lotado",
     porcentagemOcupacao: 90,
@@ -101,95 +102,60 @@ const filiaisExemplo: Barbearia[] = [
 ];
 
 // ======================================================
-// MAP STYLE
-// ======================================================
-
-const MAP_STYLE = {
-  version: 8 as const,
-  sources: {
-    "osm-tiles": {
-      type: "raster" as const,
-      tiles: [
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      ],
-      tileSize: 256,
-      attribution:
-        '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxzoom: 19,
-    },
-  },
-  layers: [
-    {
-      id: "osm-tiles-layer",
-      type: "raster" as const,
-      source: "osm-tiles",
-      minzoom: 0,
-      maxzoom: 19,
-    },
-  ],
-};
-
-// ======================================================
 // COMPONENTE PRINCIPAL
 // ======================================================
 
 export default function MapaPage() {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const dragControls = useDragControls();
+  
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
 
   const markersRef = useRef<any[]>([]);
 
-  const [filiais] =
-    useState<Barbearia[]>(filiaisExemplo);
-
-  const [filialAtiva, setFilialAtiva] =
-    useState<string | null>(null);
+  const [filiais] = useState<Barbearia[]>(filiaisExemplo);
+  const [filialAtiva, setFilialAtiva] = useState<string | null>(null);
 
   const [busca, setBusca] = useState("");
-  const [filtroTag, setFiltroTag] =
-    useState<string | null>(null);
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
 
-  const [mapaPronto, setMapaPronto] =
-    useState(false);
+  const [mapaPronto, setMapaPronto] = useState(false);
 
-  const [portalElements, setPortalElements] =
-    useState<
-      Array<{
-        id: string;
-        element: HTMLElement;
-        barbearia: Barbearia;
-      }>
-    >([]);
+  const [portalElements, setPortalElements] = useState<
+    Array<{
+      id: string;
+      element: HTMLElement;
+      barbearia: Barbearia;
+    }>
+  >([]);
+
+  // Foto de perfil do usuário (Exemplo)
+  const userProfilePic = "https://i.pravatar.cc/150?img=11"; 
 
   // ======================================================
   // MAPA
   // ======================================================
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current)
-      return;
+    if (!mapContainerRef.current || mapRef.current) return;
 
     let mapaInstancia: any;
 
     import("maplibre-gl").then((maplibregl) => {
       if (!mapContainerRef.current) return;
 
-mapaInstancia = new maplibregl.default.Map({
-  container: mapContainerRef.current,
-  style: MAP_STYLE,
-
-  center: [-46.666, -23.565],
-
-  zoom: 15.8,
-
-  pitch: 55,
-  bearing: -20,
-
-  minZoom: 10,
-  maxZoom: 19,
-
-  attributionControl: false,
-});
+      mapaInstancia = new maplibregl.default.Map({
+        container: mapContainerRef.current,
+        style: "https://tiles.openfreemap.org/styles/liberty",
+        center: [-46.666, -23.565],
+        zoom: 12,
+        pitch: 55,
+        bearing: -20,
+        minZoom: 10,
+        maxZoom: 19,
+        attributionControl: false,
+      });
 
       mapRef.current = mapaInstancia;
 
@@ -198,17 +164,10 @@ mapaInstancia = new maplibregl.default.Map({
       });
 
       mapaInstancia.on("error", (e: any) => {
-        if (
-          e?.error?.message?.includes(
-            "Failed to fetch"
-          )
-        )
-          return;
-
+        if (e?.error?.message?.includes("Failed to fetch")) return;
         console.error("[MapLibre]", e);
       });
     });
-    
 
     return () => {
       if (mapaInstancia) {
@@ -219,8 +178,7 @@ mapaInstancia = new maplibregl.default.Map({
   }, []);
 
   // ======================================================
-  // MARCADORES
-  // CRIA APENAS UMA VEZ
+  // MARCADORES E ENQUADRAMENTO INICIAL (FITBOUNDS)
   // ======================================================
 
   useEffect(() => {
@@ -229,10 +187,8 @@ mapaInstancia = new maplibregl.default.Map({
     if (!mapa || !mapaPronto) return;
 
     import("maplibre-gl").then((maplibregl) => {
-      markersRef.current.forEach((m) =>
-        m.remove()
-      );
-
+      // Limpa os marcadores antigos
+      markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
       const novosPortais: Array<{
@@ -241,16 +197,18 @@ mapaInstancia = new maplibregl.default.Map({
         barbearia: Barbearia;
       }> = [];
 
-      filiais.forEach((barbearia) => {
-        const wrapper =
-          document.createElement("div");
+      // Inicializa o objeto Bounds para enquadrar todas as filiais
+      const bounds = new maplibregl.default.LngLatBounds();
 
-        wrapper.className =
-          "map-marker-wrapper";
+      filiais.forEach((barbearia) => {
+        // Estende a visualização do mapa para incluir esta coordenada
+        bounds.extend(barbearia.coordenadas);
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "map-marker-wrapper";
 
         wrapper.addEventListener("click", () => {
           setFilialAtiva(barbearia.id);
-
           mapa.flyTo({
             center: barbearia.coordenadas,
             zoom: 17.2,
@@ -262,13 +220,12 @@ mapaInstancia = new maplibregl.default.Map({
           });
         });
 
-        const marker =
-          new maplibregl.default.Marker({
-            element: wrapper,
-            anchor: "bottom",
-          })
-            .setLngLat(barbearia.coordenadas)
-            .addTo(mapa);
+        const marker = new maplibregl.default.Marker({
+          element: wrapper,
+          anchor: "bottom",
+        })
+          .setLngLat(barbearia.coordenadas)
+          .addTo(mapa);
 
         markersRef.current.push(marker);
 
@@ -280,15 +237,20 @@ mapaInstancia = new maplibregl.default.Map({
       });
 
       setPortalElements(novosPortais);
+
+      // Aplica o enquadramento (Zoom automático para mostrar todos os pins)
+      if (filiais.length > 0) {
+        mapa.fitBounds(bounds, {
+          padding: { top: 120, bottom: 350, left: 60, right: 60 },
+          maxZoom: 16,
+          duration: 1500,
+        });
+      }
     });
 
     return () => {
-      markersRef.current.forEach((m) =>
-        m.remove()
-      );
-
+      markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
-
       setPortalElements([]);
     };
   }, [mapaPronto, filiais]);
@@ -297,9 +259,7 @@ mapaInstancia = new maplibregl.default.Map({
   // FOCO
   // ======================================================
 
-  const focarNaBarbearia = (
-    barbearia: Barbearia
-  ) => {
+  const focarNaBarbearia = (barbearia: Barbearia) => {
     setFilialAtiva(barbearia.id);
 
     mapRef.current?.flyTo({
@@ -318,21 +278,12 @@ mapaInstancia = new maplibregl.default.Map({
   // ======================================================
 
   const filiaisFiltradas = filiais
-    .filter((f) =>
-      f.nome
-        .toLowerCase()
-        .includes(busca.toLowerCase())
-    )
-    .filter(
-      (f) =>
-        !filtroTag ||
-        f.tags.includes(filtroTag)
-    );
+    .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
+    .filter((f) => !filtroTag || f.tags.includes(filtroTag));
 
   // ======================================================
   // RENDER
   // ======================================================
-
   return (
     <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
       <div
@@ -340,85 +291,111 @@ mapaInstancia = new maplibregl.default.Map({
         className="absolute inset-0 w-full h-full z-0"
       />
 
-      {portalElements.map(
-        ({ id, element, barbearia }) =>
-          createPortal(
-            <BarberMarker
-              key={id}
-              logoUrl={barbearia.logoUrl}
-              nome={barbearia.nome}
-              isActive={filialAtiva === id}
-            />,
-            element
-          )
+      {portalElements.map(({ id, element, barbearia }) =>
+        createPortal(
+          <BarberMarker
+            key={id}
+            logoUrl={barbearia.logoUrl}
+            nome={barbearia.nome}
+            isActive={filialAtiva === id}
+          />,
+          element
+        )
       )}
 
+      {/* BARRA DE PESQUISA ESTILO GOOGLE MAPS */}
       <div className="floating-search">
+        <div className="menu-icon md:hidden">
+          {/* Opcional: Ícone de menu hambúrguer */}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-black">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </div>
         <input
           type="text"
-          placeholder="Buscar por filiais, serviços ou profissionais..."
+          placeholder="Buscar por filiais, serviços..."
           value={busca}
-          onChange={(e) =>
-            setBusca(e.target.value)
-          }
+          onChange={(e) => setBusca(e.target.value)}
+        />
+        <img 
+          src={userProfilePic} 
+          alt="Perfil do Usuário" 
+          className="user-profile-pic"
         />
       </div>
 
-      <aside className="map-sidebar">
+      <motion.aside
+        className="map-sidebar"
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={0.2}
+        onDragEnd={(event, info) => {
+          const offset = info.offset.y;
+          const velocity = info.velocity.y;
+
+          // Limites reduzidos para responder MUITO mais rápido ao arrasto
+          if (offset < -15 || velocity < -150) {
+            setIsExpanded(true); // Abre rápido
+          } else if (offset > 15 || velocity > 150) {
+            setIsExpanded(false); // Fecha rápido
+          }
+        }}
+        animate={{
+          maxHeight: isExpanded ? "85vh" : "25vh",
+        }}
+        transition={{
+          type: "spring",
+          damping: 22,
+          stiffness: 280,
+        }}
+      >
+        {/* ÁREA DO PUXADOR (HANDLE) - MOBILE */}
+        <div
+          className="mobile-sheet-handle-area md:hidden"
+          onPointerDown={(e) => dragControls.start(e)}
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{ touchAction: "none" }}
+        >
+          <div className="mobile-sheet-handle" />
+        </div>
+
         <div className="sidebar-header">
-          <h1 className="map-title">
-            Nossas Filiais
-          </h1>
+          {/* TEXTOS OCULTOS NO MOBILE */}
+          <div className="hidden md:block">
+            <h1 className="map-title">Nossas Filiais</h1>
+            <p className="map-subtitle">
+              Encontre a unidade ideal para seu atendimento
+            </p>
 
-          <p className="map-subtitle">
-            Encontre a unidade ideal para seu
-            atendimento
-          </p>
-
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value">
-                {filiais.length}
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-value">{filiais.length}</div>
+                <div className="stat-label">Filiais</div>
               </div>
-
-              <div className="stat-label">
-                Filiais
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <div className="stat-value">
-                {(
-                  filiais.reduce(
-                    (acc, item) =>
-                      acc + item.avaliacao,
-                    0
-                  ) / filiais.length
-                ).toFixed(1)}
-              </div>
-
-              <div className="stat-label">
-                Avaliação
+              <div className="stat-card">
+                <div className="stat-value">
+                  {(
+                    filiais.reduce((acc, item) => acc + item.avaliacao, 0) /
+                    filiais.length
+                  ).toFixed(1)}
+                </div>
+                <div className="stat-label">Avaliação</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="filter-container">
-          <div className="filter-row">
-            {[
-              "Abertas",
-              "Mais Próximas",
-              "Premium",
-            ].map((tag) => (
+          <div className="filter-row flex gap-2 overflow-x-auto no-scrollbar">
+            {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
               <button
                 key={tag}
                 onClick={() =>
-                  setFiltroTag(
-                    filtroTag === tag
-                      ? null
-                      : tag
-                  )
+                  setFiltroTag(filtroTag === tag ? null : tag)
                 }
                 className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
                   filtroTag === tag
@@ -433,127 +410,80 @@ mapaInstancia = new maplibregl.default.Map({
         </div>
 
         <div className="branch-list">
-          {filiaisFiltradas.map(
-            (barbearia) => {
-              const isActive =
-                filialAtiva ===
-                barbearia.id;
+          {filiaisFiltradas.map((barbearia) => {
+            const isActive = filialAtiva === barbearia.id;
 
-              return (
-                <div
-                  key={barbearia.id}
-                  className={`branch-card ${
-                    isActive
-                      ? "active"
-                      : ""
-                  }`}
-                  onClick={() =>
-                    focarNaBarbearia(
-                      barbearia
-                    )
-                  }
-                >
-                  <div className="branch-header">
-                    <h3 className="branch-name">
-                      {barbearia.nome}
-                    </h3>
+            return (
+              <div
+                key={barbearia.id}
+                className={`branch-card ${isActive ? "active" : ""}`}
+                onClick={() => focarNaBarbearia(barbearia)}
+              >
+                <div className="branch-header">
+                  <h3 className="branch-name">{barbearia.nome}</h3>
 
-                    <div className="branch-rating-badge">
-                      <span>★</span>
-
-                      {barbearia.avaliacao.toFixed(
-                        1
-                      )}
-                    </div>
+                  <div className="branch-rating-badge">
+                    <span>★</span>
+                    {barbearia.avaliacao.toFixed(1)}
                   </div>
+                </div>
 
-                  <div className="branch-meta-row">
-                    <span className="branch-distance">
-                      {
-                        barbearia.distancia
-                      }
-                    </span>
+                <div className="branch-meta-row">
+                  <span className="branch-distance">
+                    {barbearia.distancia}
+                  </span>
 
-                    <div className="branch-live-occupancy">
-                      <span
-                        className={`occupancy-dot ${
-                          barbearia.statusOcupacao ===
-                          "lotado"
-                            ? "busy"
-                            : ""
-                        }`}
-                      />
-
-                      <span>
-                        {
-                          barbearia.porcentagemOcupacao
-                        }
-                        % ocupado
-                      </span>
-                    </div>
+                  <div className="branch-live-occupancy">
+                    <span
+                      className={`occupancy-dot ${
+                        barbearia.statusOcupacao === "lotado" ? "busy" : ""
+                      }`}
+                    />
+                    <span>{barbearia.porcentagemOcupacao}% ocupado</span>
                   </div>
+                </div>
 
-                  {isActive && (
-                    <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                      <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-white/60">
-                        <div className="bg-white/5 p-2 rounded-lg">
-                          <p className="font-bold text-white">
-                            {barbearia.detalhesAvaliacao.atendimento.toFixed(
-                              1
-                            )}
-                          </p>
-
-                          <p>
-                            Cortesia
-                          </p>
-                        </div>
-
-                        <div className="bg-white/5 p-2 rounded-lg">
-                          <p className="font-bold text-white">
-                            {barbearia.detalhesAvaliacao.ambiente.toFixed(
-                              1
-                            )}
-                          </p>
-
-                          <p>
-                            Ambiente
-                          </p>
-                        </div>
-
-                        <div className="bg-white/5 p-2 rounded-lg">
-                          <p className="font-bold text-white">
-                            {barbearia.detalhesAvaliacao.higiene.toFixed(
-                              1
-                            )}
-                          </p>
-
-                          <p>
-                            Higiene
-                          </p>
-                        </div>
+                {isActive && (
+                  <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                    <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-white/60">
+                      <div className="bg-white/5 p-2 rounded-lg">
+                        <p className="font-bold text-white">
+                          {barbearia.detalhesAvaliacao.atendimento.toFixed(1)}
+                        </p>
+                        <p>Cortesia</p>
                       </div>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
+                      <div className="bg-white/5 p-2 rounded-lg">
+                        <p className="font-bold text-white">
+                          {barbearia.detalhesAvaliacao.ambiente.toFixed(1)}
+                        </p>
+                        <p>Ambiente</p>
+                      </div>
 
-                          alert(
-                            `Abrindo checkout da filial ${barbearia.nome}`
-                          );
-                        }}
-                        className="w-full bg-[#a3e635] text-black font-bold py-2.5 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
-                      >
-                        AGENDAMENTO
-                        EXPRESSO
-                      </button>
+                      <div className="bg-white/5 p-2 rounded-lg">
+                        <p className="font-bold text-white">
+                          {barbearia.detalhesAvaliacao.higiene.toFixed(1)}
+                        </p>
+                        <p>Higiene</p>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            }
-          )}
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        alert(`Abrindo checkout da filial ${barbearia.nome}`);
+                      }}
+                      className="w-full bg-[#a3e635] text-black font-bold py-2.5 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
+                    >
+                      AGENDAMENTO EXPRESSO
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
-      </aside>
+      </motion.aside>
     </main>
   );
 }
