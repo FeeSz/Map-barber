@@ -253,13 +253,13 @@ npm start
 ## Interface
 
 - [ ] Modo escuro
-- [ ] Responsividade mobile avançada
-- [ ] Sidebar dinâmica
+- [X] Responsividade mobile avançada
+- [X] Sidebar dinâmica
 
 ## Mapa
 
-- [ ] Rotas até a unidade
-- [ ] Geolocalização do usuário
+- [X] Rotas até a unidade
+- [X] Geolocalização do usuário
 - [ ] Clustering de marcadores
 - [ ] Heatmap de ocupação
 
