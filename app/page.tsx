@@ -70,7 +70,7 @@ const filiaisExemplo: Barbearia[] = [
     avaliacao: 4.8,
     detalhesAvaliacao: { atendimento: 5.0, ambiente: 5.0, higiene: 5.0 },
     coordenadas: [-46.6235237, -23.510714], // Zona Norte / Santana
-    tags: ["Abertas", "Premium"],
+    tags: ["Mais Próximas", "Premium"],
     },
     {
 
@@ -88,7 +88,7 @@ const filiaisExemplo: Barbearia[] = [
 
   {
     id: "3",
-    nome: "Seu Elias - Premium",
+    nome: "Seu Elias",
     logoUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&h=150&fit=crop&q=80",
     distancia: "3.8 km",
     statusOcupacao: "lotado",
@@ -96,7 +96,7 @@ const filiaisExemplo: Barbearia[] = [
     avaliacao: 4.7,
     detalhesAvaliacao: { atendimento: 4.8, ambiente: 4.6, higiene: 4.7 },
     coordenadas: [-46.6701, -23.5705],
-    tags: ["Mais Próximas", "Premium"],
+    tags: ["Abertas", "Mais Próximas"],
   },
   {
     id: "4",
@@ -120,7 +120,7 @@ const filiaisExemplo: Barbearia[] = [
     avaliacao: 4.6,
     detalhesAvaliacao: { atendimento: 4.7, ambiente: 4.8, higiene: 4.5 },
     coordenadas: [-46.6853, -23.5642], // Zona Oeste / Pinheiros
-    tags: ["Abertas"],
+    tags: ["Abertas", "Premium"],
   },
   {
     id: "6",
