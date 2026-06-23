@@ -15,19 +15,10 @@ interface MarkerProps {
   isActive: boolean;
 }
 
-function BarberMarker({
-  logoUrl,
-  nome,
-  isActive,
-}: MarkerProps) {
+function BarberMarker({ logoUrl, nome, isActive }: MarkerProps) {
   return (
-    <div
-      className={`premium-marker ${
-        isActive ? "marker-active" : ""
-      }`}
-    >
+    <div className={`premium-marker ${isActive ? "marker-active" : ""}`}>
       <div className="pulse-glow" />
-
       <div className="marker-logo-container">
         <img
           src={logoUrl}
@@ -61,43 +52,99 @@ interface Barbearia {
 }
 
 // ======================================================
-// DADOS MOCK - Atualizado com imagens (Logos) reais
+
+// DADOS MOCK - Expandido com 5 novas barbearias em SP
+// SITE PARA CONSULTAR CORDENADAS - https://nominatim.openstreetmap.org/ui/search.html
+
 // ======================================================
+
 
 const filiaisExemplo: Barbearia[] = [
   {
     id: "1",
+    nome: "Infordocs barber - Carandiru",
+    logoUrl: "https://media.licdn.com/dms/image/v2/D4E0BAQHxjx-mXkYAmw/company-logo_200_200/company-logo_200_200/0/1690673514068/infordoc_digital_logo?e=1783555200&v=beta&t=jbqqF-5KUThOwtmctipsVY8tsjDttMqKgHRjD-_xoNA",
+    distancia: "7.2 km",
+    statusOcupacao: "moderado",
+    porcentagemOcupacao: 55,
+    avaliacao: 4.8,
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 5.0, higiene: 5.0 },
+    coordenadas: [-46.6235237, -23.510714], // Zona Norte / Santana
+    tags: ["Abertas", "Premium"],
+    },
+    {
+
+    id: "2",
     nome: "Barbearia Corleone - Jardins",
-    logoUrl:
-      "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=150&h=150&fit=crop&q=80",
+    logoUrl: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=150&h=150&fit=crop&q=80",
     distancia: "1.2 km",
     statusOcupacao: "tranquilo",
     porcentagemOcupacao: 25,
     avaliacao: 4.9,
-    detalhesAvaliacao: {
-      atendimento: 5.0,
-      ambiente: 4.9,
-      higiene: 4.8,
-    },
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 4.9, higiene: 4.8 },
     coordenadas: [-46.6624, -23.5616],
     tags: ["Abertas", "Premium"],
   },
+
   {
-    id: "2",
+    id: "3",
     nome: "Seu Elias - Premium",
-    logoUrl:
-      "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&h=150&fit=crop&q=80",
+    logoUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&h=150&fit=crop&q=80",
     distancia: "3.8 km",
     statusOcupacao: "lotado",
     porcentagemOcupacao: 90,
     avaliacao: 4.7,
-    detalhesAvaliacao: {
-      atendimento: 4.8,
-      ambiente: 4.6,
-      higiene: 4.7,
-    },
+    detalhesAvaliacao: { atendimento: 4.8, ambiente: 4.6, higiene: 4.7 },
     coordenadas: [-46.6701, -23.5705],
     tags: ["Mais Próximas", "Premium"],
+  },
+  {
+    id: "4",
+    nome: "Cavalera Barber Shop - Bixiga",
+    logoUrl: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=150&h=150&fit=crop&q=80",
+    distancia: "2.5 km",
+    statusOcupacao: "moderado",
+    porcentagemOcupacao: 65,
+    avaliacao: 4.8,
+    detalhesAvaliacao: { atendimento: 4.9, ambiente: 4.8, higiene: 4.8 },
+    coordenadas: [-46.6433, -23.5558], // Região Central / Bela Vista
+    tags: ["Abertas", "Mais Próximas"],
+  },
+  {
+    id: "5",
+    nome: "Retro Hair - Pinheiros",
+    logoUrl: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=150&h=150&fit=crop&q=80",
+    distancia: "4.1 km",
+    statusOcupacao: "tranquilo",
+    porcentagemOcupacao: 40,
+    avaliacao: 4.6,
+    detalhesAvaliacao: { atendimento: 4.7, ambiente: 4.8, higiene: 4.5 },
+    coordenadas: [-46.6853, -23.5642], // Zona Oeste / Pinheiros
+    tags: ["Abertas"],
+  },
+  {
+    id: "6",
+    nome: "Garagem Barba e Cabelo - Moema",
+    logoUrl: "https://images.unsplash.com/photo-1512690459411-b9245aed614b?w=150&h=150&fit=crop&q=80",
+    distancia: "5.3 km",
+    statusOcupacao: "lotado",
+    porcentagemOcupacao: 85,
+    avaliacao: 4.9,
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 4.9, higiene: 4.9 },
+    coordenadas: [-46.6661, -23.6025], // Zona Sul / Moema
+    tags: ["Premium"],
+  },
+  {
+    id: "7",
+    nome: "The Barber - Tatuapé",
+    logoUrl: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=150&h=150&fit=crop&q=80",
+    distancia: "9.8 km",
+    statusOcupacao: "tranquilo",
+    porcentagemOcupacao: 15,
+    avaliacao: 4.5,
+    detalhesAvaliacao: { atendimento: 4.6, ambiente: 4.4, higiene: 4.7 },
+    coordenadas: [-46.5742, -23.5412], // Zona Leste / Tatuapé
+    tags: ["Abertas"],
   },
 ];
 
@@ -111,7 +158,6 @@ export default function MapaPage() {
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-
   const markersRef = useRef<any[]>([]);
 
   const [filiais] = useState<Barbearia[]>(filiaisExemplo);
@@ -123,14 +169,9 @@ export default function MapaPage() {
   const [mapaPronto, setMapaPronto] = useState(false);
 
   const [portalElements, setPortalElements] = useState<
-    Array<{
-      id: string;
-      element: HTMLElement;
-      barbearia: Barbearia;
-    }>
+    Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }>
   >([]);
 
-  // Foto de perfil do usuário (Exemplo)
   const userProfilePic = "https://i.pravatar.cc/150?img=11"; 
 
   // ======================================================
@@ -147,9 +188,9 @@ export default function MapaPage() {
 
       mapaInstancia = new maplibregl.default.Map({
         container: mapContainerRef.current,
-        style: "https://tiles.openfreemap.org/styles/liberty",
+        style: "https://tiles.openfreemap.org/styles/fiord",
         center: [-46.666, -23.565],
-        zoom: 12,
+        zoom: 22,
         pitch: 55,
         bearing: -20,
         minZoom: 10,
@@ -159,10 +200,7 @@ export default function MapaPage() {
 
       mapRef.current = mapaInstancia;
 
-      mapaInstancia.on("load", () => {
-        setMapaPronto(true);
-      });
-
+      mapaInstancia.on("load", () => setMapaPronto(true));
       mapaInstancia.on("error", (e: any) => {
         if (e?.error?.message?.includes("Failed to fetch")) return;
         console.error("[MapLibre]", e);
@@ -178,30 +216,21 @@ export default function MapaPage() {
   }, []);
 
   // ======================================================
-  // MARCADORES E ENQUADRAMENTO INICIAL (FITBOUNDS)
+  // MARCADORES E ENQUADRAMENTO
   // ======================================================
 
   useEffect(() => {
     const mapa = mapRef.current;
-
     if (!mapa || !mapaPronto) return;
 
     import("maplibre-gl").then((maplibregl) => {
-      // Limpa os marcadores antigos
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
-      const novosPortais: Array<{
-        id: string;
-        element: HTMLElement;
-        barbearia: Barbearia;
-      }> = [];
-
-      // Inicializa o objeto Bounds para enquadrar todas as filiais
+      const novosPortais: Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }> = [];
       const bounds = new maplibregl.default.LngLatBounds();
 
       filiais.forEach((barbearia) => {
-        // Estende a visualização do mapa para incluir esta coordenada
         bounds.extend(barbearia.coordenadas);
 
         const wrapper = document.createElement("div");
@@ -229,19 +258,14 @@ export default function MapaPage() {
 
         markersRef.current.push(marker);
 
-        novosPortais.push({
-          id: barbearia.id,
-          element: wrapper,
-          barbearia,
-        });
+        novosPortais.push({ id: barbearia.id, element: wrapper, barbearia });
       });
 
       setPortalElements(novosPortais);
 
-      // Aplica o enquadramento (Zoom automático para mostrar todos os pins)
       if (filiais.length > 0) {
         mapa.fitBounds(bounds, {
-          padding: { top: 120, bottom: 350, left: 60, right: 60 },
+          padding: { top: 150, bottom: 350, left: 60, right: 60 },
           maxZoom: 16,
           duration: 1500,
         });
@@ -255,13 +279,8 @@ export default function MapaPage() {
     };
   }, [mapaPronto, filiais]);
 
-  // ======================================================
-  // FOCO
-  // ======================================================
-
   const focarNaBarbearia = (barbearia: Barbearia) => {
     setFilialAtiva(barbearia.id);
-
     mapRef.current?.flyTo({
       center: barbearia.coordenadas,
       zoom: 18,
@@ -273,57 +292,38 @@ export default function MapaPage() {
     });
   };
 
-  // ======================================================
-  // FILTROS SIDEBAR
-  // ======================================================
-
   const filiaisFiltradas = filiais
     .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
     .filter((f) => !filtroTag || f.tags.includes(filtroTag));
 
-  // ======================================================
-  // RENDER
-  // ======================================================
   return (
     <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
-      <div
-        ref={mapContainerRef}
-        className="absolute inset-0 w-full h-full z-0"
-      />
+      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
       {portalElements.map(({ id, element, barbearia }) =>
         createPortal(
-          <BarberMarker
-            key={id}
-            logoUrl={barbearia.logoUrl}
-            nome={barbearia.nome}
-            isActive={filialAtiva === id}
-          />,
+          <BarberMarker key={id} logoUrl={barbearia.logoUrl} nome={barbearia.nome} isActive={filialAtiva === id} />,
           element
         )
       )}
 
-      {/* BARRA DE PESQUISA ESTILO GOOGLE MAPS */}
-      <div className="floating-search">
-        <div className="menu-icon md:hidden">
-          {/* Opcional: Ícone de menu hambúrguer */}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-black">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
+      {/* BARRA DE PESQUISA E PERFIL */}
+      <div className="top-search-wrapper">
+        <div className="floating-search">
+          <input
+            type="text"
+            placeholder="Buscar por filiais, serviços..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
         </div>
-        <input
-          type="text"
-          placeholder="Buscar por filiais, serviços..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
-        <img 
-          src={userProfilePic} 
-          alt="Perfil do Usuário" 
-          className="user-profile-pic"
-        />
+        <div className="profile-pic-container">
+          <img 
+            src={userProfilePic} 
+            alt="Perfil do Usuário" 
+            className="user-profile-pic"
+          />
+        </div>
       </div>
 
       <motion.aside
@@ -336,83 +336,73 @@ export default function MapaPage() {
         onDragEnd={(event, info) => {
           const offset = info.offset.y;
           const velocity = info.velocity.y;
-
-          // Limites reduzidos para responder MUITO mais rápido ao arrasto
-          if (offset < -15 || velocity < -150) {
-            setIsExpanded(true); // Abre rápido
-          } else if (offset > 15 || velocity > 150) {
-            setIsExpanded(false); // Fecha rápido
-          }
+          if (offset < -15 || velocity < -150) setIsExpanded(true);
+          else if (offset > 15 || velocity > 150) setIsExpanded(false);
         }}
         animate={{
-          maxHeight: isExpanded ? "85vh" : "25vh",
+          height: isExpanded ? "85vh" : "28vh",
         }}
-        transition={{
-          type: "spring",
-          damping: 22,
-          stiffness: 280,
-        }}
+        transition={{ type: "spring", damping: 22, stiffness: 280 }}
       >
-        {/* ÁREA DO PUXADOR (HANDLE) - MOBILE */}
-        <div
-          className="mobile-sheet-handle-area md:hidden"
+        {/* ÁREA ARRASTÁVEL SUPERIOR (Todo o Header e Filtros) */}
+        <div 
+          className="flex flex-col flex-shrink-0 cursor-grab active:cursor-grabbing w-full"
           onPointerDown={(e) => dragControls.start(e)}
-          onClick={() => setIsExpanded(!isExpanded)}
           style={{ touchAction: "none" }}
         >
-          <div className="mobile-sheet-handle" />
-        </div>
+          <div className="mobile-sheet-handle-area md:hidden" onClick={() => setIsExpanded(!isExpanded)}>
+            <div className="mobile-sheet-handle" />
+          </div>
 
-        <div className="sidebar-header">
-          {/* TEXTOS OCULTOS NO MOBILE */}
-          <div className="hidden md:block">
-            <h1 className="map-title">Nossas Filiais</h1>
-            <p className="map-subtitle">
-              Encontre a unidade ideal para seu atendimento
-            </p>
-
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-value">{filiais.length}</div>
-                <div className="stat-label">Filiais</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">
-                  {(
-                    filiais.reduce((acc, item) => acc + item.avaliacao, 0) /
-                    filiais.length
-                  ).toFixed(1)}
+          <div className="sidebar-header">
+            <div className="hidden md:block">
+              <h1 className="map-title">Nossas Filiais</h1>
+              <p className="map-subtitle">Encontre a unidade ideal para seu atendimento</p>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-value">{filiais.length}</div>
+                  <div className="stat-label">Filiais</div>
                 </div>
-                <div className="stat-label">Avaliação</div>
+                <div className="stat-card">
+                  <div className="stat-value">
+                    {(filiais.reduce((acc, item) => acc + item.avaliacao, 0) / filiais.length).toFixed(1)}
+                  </div>
+                  <div className="stat-label">Avaliação</div>
+                </div>
               </div>
+            </div>
+          </div>
+
+          <div className="filter-container">
+            <div className="filter-row flex gap-2 overflow-x-auto no-scrollbar" onPointerDown={(e) => e.stopPropagation()}>
+              {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => setFiltroTag(filtroTag === tag ? null : tag)}
+                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
+                    filtroTag === tag
+                      ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
+                      : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="filter-container">
-          <div className="filter-row flex gap-2 overflow-x-auto no-scrollbar">
-            {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
-              <button
-                key={tag}
-                onClick={() =>
-                  setFiltroTag(filtroTag === tag ? null : tag)
-                }
-                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
-                  filtroTag === tag
-                    ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
-                    : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="branch-list">
+        {/* ÁREA DA LISTA (Com rolagem interna e arraste nos espaços vazios) */}
+        <div 
+          className="branch-list"
+          onPointerDown={(e) => {
+            if ((e.target as HTMLElement).classList.contains('branch-list')) {
+              dragControls.start(e);
+            }
+          }}
+        >
           {filiaisFiltradas.map((barbearia) => {
             const isActive = filialAtiva === barbearia.id;
-
             return (
               <div
                 key={barbearia.id}
@@ -421,7 +411,6 @@ export default function MapaPage() {
               >
                 <div className="branch-header">
                   <h3 className="branch-name">{barbearia.nome}</h3>
-
                   <div className="branch-rating-badge">
                     <span>★</span>
                     {barbearia.avaliacao.toFixed(1)}
@@ -429,16 +418,9 @@ export default function MapaPage() {
                 </div>
 
                 <div className="branch-meta-row">
-                  <span className="branch-distance">
-                    {barbearia.distancia}
-                  </span>
-
+                  <span className="branch-distance">{barbearia.distancia}</span>
                   <div className="branch-live-occupancy">
-                    <span
-                      className={`occupancy-dot ${
-                        barbearia.statusOcupacao === "lotado" ? "busy" : ""
-                      }`}
-                    />
+                    <span className={`occupancy-dot ${barbearia.statusOcupacao === "lotado" ? "busy" : ""}`} />
                     <span>{barbearia.porcentagemOcupacao}% ocupado</span>
                   </div>
                 </div>
@@ -447,27 +429,18 @@ export default function MapaPage() {
                   <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
                     <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-white/60">
                       <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">
-                          {barbearia.detalhesAvaliacao.atendimento.toFixed(1)}
-                        </p>
+                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</p>
                         <p>Cortesia</p>
                       </div>
-
                       <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">
-                          {barbearia.detalhesAvaliacao.ambiente.toFixed(1)}
-                        </p>
+                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</p>
                         <p>Ambiente</p>
                       </div>
-
                       <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">
-                          {barbearia.detalhesAvaliacao.higiene.toFixed(1)}
-                        </p>
+                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</p>
                         <p>Higiene</p>
                       </div>
                     </div>
-
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

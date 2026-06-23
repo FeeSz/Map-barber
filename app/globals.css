@@ -5,7 +5,6 @@
   --foreground: #f5f5f7;
   --brand-color: #a3e635;
   --brand-glow: rgba(163, 230, 53, 0.2);
-  --glass-border: rgba(255, 255, 255, 0.08);
   --apple-blur: blur(32px) saturate(180%);
 }
 
@@ -15,8 +14,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -34,23 +32,18 @@ body {
   top: 24px;
   left: 24px;
   width: 430px;
-  max-height: calc(100vh - 48px);
   z-index: 99999;
+  
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
+  
   backdrop-filter: var(--apple-blur);
   -webkit-backdrop-filter: var(--apple-blur);
   background: linear-gradient(180deg, rgba(12, 12, 12, 0.96), rgba(8, 8, 8, 0.92));
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 32px;
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  scrollbar-width: none;
-}
-
-.map-sidebar::-webkit-scrollbar {
-  display: none;
 }
 
 .map-sidebar::before {
@@ -67,8 +60,6 @@ body {
 }
 
 .sidebar-header {
-  position: sticky;
-  top: 0;
   z-index: 10;
   padding: 28px 28px 20px;
   backdrop-filter: blur(30px);
@@ -96,20 +87,24 @@ body {
 }
 
 /* =======================================================
-   LISTA DE FILIAIS
+   LISTA DE FILIAIS (Área de Rolagem Interna)
    ======================================================= */
 
 .branch-list {
+  flex: 1; 
+  overflow-y: auto; 
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 20px;
+  padding: 0 20px 30px 20px; 
+  scrollbar-width: none;
 }
+
+.branch-list::-webkit-scrollbar { display: none; }
 
 .branch-card {
   position: relative;
   padding: 20px;
-  overflow: hidden;
   border-radius: 24px;
   cursor: pointer;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
@@ -136,9 +131,7 @@ body {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
-.branch-card:hover::before {
-  opacity: 1;
-}
+.branch-card:hover::before { opacity: 1; }
 
 .branch-card.active {
   background: linear-gradient(180deg, rgba(163, 230, 53, 0.12), rgba(163, 230, 53, 0.04));
@@ -146,9 +139,7 @@ body {
   box-shadow: 0 0 30px rgba(163, 230, 53, 0.15);
 }
 
-.branch-card.active::before {
-  opacity: 1;
-}
+.branch-card.active::before { opacity: 1; }
 
 .branch-header {
   display: flex;
@@ -184,10 +175,7 @@ body {
   font-size: 13px;
 }
 
-.branch-distance {
-  color: var(--brand-color);
-  font-weight: 700;
-}
+.branch-distance { color: var(--brand-color); font-weight: 700; }
 
 .branch-live-occupancy {
   display: flex;
@@ -204,18 +192,16 @@ body {
   box-shadow: 0 0 10px #22c55e;
 }
 
-.occupancy-dot.busy {
-  background: #ef4444;
-  box-shadow: 0 0 10px #ef4444;
-}
+.occupancy-dot.busy { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
+
 
 /* =======================================================
-   BARRA DE BUSCA E PERFIL (ESTILO GOOGLE MAPS)
+   BARRA DE BUSCA E PERFIL (Black Glassmorphism com Borda Negra)
    ======================================================= */
 
-.floating-search {
+.top-search-wrapper {
   position: absolute;
-  top: 48px; /* Mais descida para evitar cortesias do OS */
+  top: 24px; /* <--- Subimos os itens avulsos de 48px para 24px */
   left: 50%;
   transform: translateX(-50%);
   z-index: 99999;
@@ -226,47 +212,75 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  
-  background: #ffffff;
-  border: 1px solid #1a1a1a;
-  border-radius: 999px;
-  padding: 8px 12px 8px 20px;
-  
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  transition: 0.3s ease;
+}
+
+.floating-search {
+  flex: 1;
+  position: relative;
 }
 
 .floating-search input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #111;
+  width: 100%;
+  padding: 16px 24px;
+  border-radius: 999px;
+  
+  /* Fundo glassmorphism com forte blur e cor preta opaca */
+  background: rgba(15, 15, 15, 0.65);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  
+  /* Borda preta pedida */
+  border: 1px solid #000000;
+  
+  color: white;
   font-size: 15px;
-  font-weight: 500;
+  transition: 0.3s ease;
+  
+  /* Sombra externa + Borda interna branca super sutil pra dar acabamento 3D */
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15);
 }
 
 .floating-search input::placeholder {
-  color: #666;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.floating-search .user-profile-pic {
-  width: 38px;
-  height: 38px;
+.floating-search input:focus {
+  outline: none;
+  border-color: var(--brand-color);
+  box-shadow: 0 0 25px rgba(163, 230, 53, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+}
+
+/* O novo container que garante o fundo desfocado atrás da foto */
+.profile-pic-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  border-radius: 50%;
+  
+  /* Segue exatamente o mesmo estilo de blur e borda da barra de pesquisa */
+  background: rgba(15, 15, 15, 0.65);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid #000000;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-pic-container:hover {
+  transform: scale(1.05);
+  border-color: var(--brand-color);
+}
+
+.user-profile-pic {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #f0f0f0;
-  cursor: pointer;
-  transition: transform 0.2s ease;
 }
 
-.floating-search .user-profile-pic:hover {
-  transform: scale(1.05);
-}
-
-.floating-search .menu-icon {
-  display: none;
-}
 
 /* =======================================================
    MARCADORES
@@ -295,11 +309,7 @@ body {
   transform: rotateX(10deg) rotateY(-10deg);
 }
 
-.marker-logo-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.marker-logo-container img { width: 100%; height: 100%; object-fit: cover; }
 
 .premium-marker:hover .marker-logo-container,
 .marker-active .marker-logo-container {
@@ -326,29 +336,21 @@ body {
 }
 
 /* =======================================================
-   MAPLIBRE E PROTEÇÕES
+   MAPLIBRE E PROTEÇÕES DESKTOP
    ======================================================= */
 
-.maplibregl-map,
-.maplibregl-canvas {
-  z-index: 1 !important;
-}
-
-.maplibregl-marker {
-  z-index: 9999 !important;
-  cursor: pointer;
-}
+.maplibregl-map, .maplibregl-canvas { z-index: 1 !important; }
+.maplibregl-marker { z-index: 9999 !important; cursor: pointer; }
 
 @media (min-width: 769px) {
   .map-sidebar {
+    height: calc(100vh - 48px) !important;
     max-height: calc(100vh - 48px) !important;
     transform: none !important; 
   }
 }
 
-.mobile-sheet-handle-area {
-  display: none;
-}
+.mobile-sheet-handle-area { display: none; }
 
 .stats-grid {
   display: grid;
@@ -364,30 +366,13 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.stat-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: white;
-}
+.stat-value { font-size: 22px; font-weight: 700; color: white; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #8a8a8a; }
 
-.stat-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #8a8a8a;
-}
+.filter-container { padding: 18px 20px 10px; }
 
-.filter-container {
-  padding: 18px 20px 10px;
-}
-
-.filter-row::-webkit-scrollbar,
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
+.filter-row::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
 
 /* =======================================================
    RESPONSIVO (MOBILE)
@@ -401,26 +386,15 @@ body {
     top: auto;
     bottom: 12px;
     border-radius: 24px;
-    padding-bottom: 20px;
   }
 
-  /* Garante que a barra fique no centro no mobile também */
-  .floating-search {
-    top: 50px;
-    left: 50%;
-    transform: translateX(-50%);
+  /* Subindo a barra de pesquisa no mobile também (de 56px para 20px) */
+  .top-search-wrapper { 
+    top: 20px; 
     width: calc(100vw - 32px);
-    padding: 6px 10px 6px 16px;
   }
 
-  .floating-search .menu-icon {
-    display: block;
-    margin-right: 8px;
-  }
-
-  .stats-grid {
-    display: none;
-  }
+  .stats-grid { display: none; }
 
   .mobile-sheet-handle-area {
     display: flex;
