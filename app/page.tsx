@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 
 import { useGeolocation } from './hooks/useGeolocation';
 import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
-import { fetchRoute } from './utils/fetchRoute';
+import { fetchRoute, RouteData } from './utils/fetchRoute';
 
 // ======================================================
 // COMPONENTE DO MARCADOR
@@ -153,7 +153,8 @@ const filiaisExemplo: Barbearia[] = [
 export default function MapaPage() {
   const { coords } = useGeolocation();
   const [rotaAtivaId, setRotaAtivaId] = useState<string | null>(null);
-
+  const [routeEtas, setRouteEtas] = useState<{ car: number, walk: number, transit: number } | null>(null);
+  const animationRef = useRef<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const dragControls = useDragControls();
   
@@ -203,7 +204,6 @@ export default function MapaPage() {
 
       mapaInstancia.on("load", () => {
         setMapaPronto(true);
-        // Inicializa as camadas de rota e do usuário
         initRouteLayers(mapaInstancia);
         initUserLocationLayers(mapaInstancia);
       });
@@ -223,7 +223,7 @@ export default function MapaPage() {
   }, []);
 
   // ======================================================
-  // GEOLOCALIZAÇÃO EM TEMPO REAL (ATUALIZAÇÃO DO PONTO)
+  // GEOLOCALIZAÇÃO EM TEMPO REAL
   // ======================================================
   
   useEffect(() => {
@@ -262,6 +262,7 @@ export default function MapaPage() {
 
         wrapper.addEventListener("click", () => {
           handleSelecionarUnidade(barbearia);
+  
         });
 
         const marker = new maplibregl.default.Marker({
@@ -295,11 +296,12 @@ export default function MapaPage() {
   }, [mapaPronto, filiais]);
 
   // ======================================================
-  // FUNÇÕES DE FOCO, SELEÇÃO E ROTAS
+  // FUNÇÕES DE FOCO E ROTAS ANIMADAS
   // ======================================================
 
   const focarNaBarbearia = (barbearia: Barbearia) => {
     setFilialAtiva(barbearia.id);
+    
     mapRef.current?.flyTo({
       center: barbearia.coordenadas,
       zoom: 18,
@@ -313,6 +315,7 @@ export default function MapaPage() {
 
   const handleSelecionarUnidade = async (barbearia: Barbearia) => {
     focarNaBarbearia(barbearia);
+    if (!coords) return;
 
     if (!coords) {
       console.info('Aguardando sua localização...');
@@ -322,41 +325,71 @@ export default function MapaPage() {
     const map = mapRef.current;
     if (!map) return;
 
+    // Reseta animações e loading states
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    setRouteEtas(null);
+
     const routeSource = map.getSource('route') as any;
     if (routeSource) {
-      // Limpa rota anterior rapidamente
       routeSource.setData({ type: 'FeatureCollection', features: [] });
     }
 
-    const routeFeature = await fetchRoute(coords, barbearia.coordenadas);
+    const data = await fetchRoute(coords, barbearia.coordenadas);
     
-    if (routeFeature && routeSource) {
-      routeSource.setData({
-        type: 'FeatureCollection',
-        features: [routeFeature]
-      });
+    if (data && routeSource) {
+      setRouteEtas(data.durations);
+      setRotaAtivaId(barbearia.id);
 
       import("maplibre-gl").then((maplibregl) => {
         const bounds = new maplibregl.default.LngLatBounds();
-        // Adiciona as coordenadas da rota ao bound para dar zoom correto
-        routeFeature.geometry.coordinates.forEach((coord: any) => {
+        data.feature.geometry.coordinates.forEach((coord: any) => {
           bounds.extend(coord as [number, number]);
         });
-        
         map.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 60, right: 60 }, maxZoom: 16, duration: 1000 });
       });
       
-      setRotaAtivaId(barbearia.id);
+      // Lógica de Traçado Animado (Line Tracing)
+      const fullCoordinates = data.feature.geometry.coordinates;
+      let currentFrame = 0;
+      const totalFrames = 45; // Duração base da animação (aprox. 0.75s)
+      const pointsPerFrame = Math.max(1, Math.ceil(fullCoordinates.length / totalFrames));
+
+      const animateRoute = () => {
+        currentFrame++;
+        const currentPoints = currentFrame * pointsPerFrame;
+        
+        routeSource.setData({
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: fullCoordinates.slice(0, currentPoints)
+            },
+            properties: {}
+          }]
+        });
+
+        if (currentPoints < fullCoordinates.length) {
+          animationRef.current = requestAnimationFrame(animateRoute);
+        }
+      };
+
+      animationRef.current = requestAnimationFrame(animateRoute);
     }
   };
 
   const limparRota = () => {
+    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    setRouteEtas(null);
+    setRotaAtivaId(null);
+    setFilialAtiva(null); // Fecha o card também
+    
     const map = mapRef.current;
     if (map) {
       const source = map.getSource('route') as any;
       if (source) source.setData({ type: 'FeatureCollection', features: [] });
     }
-    setRotaAtivaId(null);
   };
 
   const filiaisFiltradas = filiais
@@ -415,7 +448,6 @@ export default function MapaPage() {
         }}
         transition={{ type: "spring", damping: 22, stiffness: 280 }}
       >
-        {/* ÁREA ARRASTÁVEL SUPERIOR */}
         <div 
           className="flex flex-col flex-shrink-0 cursor-grab active:cursor-grabbing w-full"
           onPointerDown={(e) => dragControls.start(e)}
@@ -426,9 +458,7 @@ export default function MapaPage() {
           </div>
 
           <div className="sidebar-header">
-            {/* TEXTOS E ELEMENTOS EXCLUSIVOS DO DESKTOP */}
             <div className="hidden md:block">
-              {/* BOTÃO VOLTAR DO HEADER DESKTOP */}
               <button 
                 onClick={() => {
                   window.history.back(); 
@@ -489,7 +519,6 @@ export default function MapaPage() {
           </div>
         </div>
 
-        {/* ÁREA DA LISTA E BOTÃO DE LIMPAR ROTA */}
         <div 
           className="branch-list"
           onPointerDown={(e) => {
@@ -511,7 +540,8 @@ export default function MapaPage() {
 
           {filiaisFiltradas.map((barbearia) => {
             const isRouteActive = rotaAtivaId === barbearia.id;
-            // Se esta é a barbearia selecionada para a rota, o outline fica verde
+            const isActive = filialAtiva === barbearia.id; // Controla se o card está aberto
+            
             const highlightClass = isRouteActive 
                 ? 'border-[#a3e635] shadow-[0_0_15px_rgba(163,230,53,0.15)] bg-white/10' 
                 : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10';
@@ -522,7 +552,6 @@ export default function MapaPage() {
                 className={`branch-card transition-all duration-300 border ${highlightClass}`}
                 onClick={() => handleSelecionarUnidade(barbearia)}
               >
-                {/* Linha colorida lateral (preservada do seu CSS original) */}
                 <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-[#a3e635] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ opacity: isRouteActive ? 1 : undefined }}></div>
 
                 <div className="branch-header">
@@ -541,30 +570,53 @@ export default function MapaPage() {
                   </div>
                 </div>
 
-                {filialAtiva === barbearia.id && (
+                {isActive && (
                   <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                    <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-white/60">
-                      <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</p>
-                        <p>Cortesia</p>
+                    
+                    {/* INFOS DE TEMPO DE VIAGEM */}
+                    {routeEtas ? (
+                      <div className="flex gap-2">
+                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>
+                          </svg>
+                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.car / 60)} min</span>
+                        </div>
+                        
+                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                            <path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="17" cy="18" r="2"/>
+                          </svg>
+                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.transit / 60)} min</span>
+                        </div>
+
+                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
+                            <path d="M12 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M11 21l-1-4-2-1V9c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v7l-2 1-1 4"/>
+                          </svg>
+                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.walk / 60)} min</span>
+                        </div>
                       </div>
-                      <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</p>
-                        <p>Ambiente</p>
+                    ) : (
+                      <div className="flex items-center justify-center py-4 bg-white/5 rounded-xl border border-white/5">
+                        <span className="text-xs text-white/50 animate-pulse tracking-wider">Calculando melhor rota...</span>
                       </div>
-                      <div className="bg-white/5 p-2 rounded-lg">
-                        <p className="font-bold text-white">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</p>
-                        <p>Higiene</p>
-                      </div>
+                    )}
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] text-white/50 pt-1">
+                      <p>Cortesia <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</strong></p>
+                      <p>Ambiente <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</strong></p>
+                      <p>Higiene <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</strong></p>
                     </div>
+
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         alert(`Abrindo checkout da filial ${barbearia.nome}`);
                       }}
-                      className="w-full bg-[#a3e635] text-black font-bold py-2.5 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
+                      className="w-full mt-2 bg-[#a3e635] text-black font-bold py-3 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-[0_4px_14px_rgba(163,230,53,0.3)] cursor-pointer"
                     >
-                      AGENDAMENTO EXPRESSO
+                      AGENDAR NESTA UNIDADE
                     </button>
                   </div>
                 )}
