@@ -374,19 +374,8 @@ html, body {
   gap: 4px;
 }
 
-.stat-value {
-  font-size: 26px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: -0.02em;
-}
-.stat-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: #8f8f8f;
-  font-weight: 600;
-}
+.stat-value { font-size: 22px; font-weight: 700; color: white; }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #8a8a8a; }
 
 .filter-container { padding: 18px 20px 10px; }
 
