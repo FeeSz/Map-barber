@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, useDragControls } from "framer-motion";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { listaCompletaBarbearias } from "./utils/barbeariasData";
+
 import { useGeolocation } from './hooks/useGeolocation';
 import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
 import { fetchRoute, RouteData } from './utils/fetchRoute';
@@ -59,10 +59,92 @@ interface Barbearia {
 // DADOS MOCK - Expandido com 5 novas barbearias em SP
 // ======================================================
 
-
-
-  const [filiais, setFiliais] = useState<Barbearia[]>(listaCompletaBarbearias); 
-
+const filiaisExemplo: Barbearia[] = [
+  {
+    id: "1",
+    nome: "Infordocs barber - Carandiru",
+    logoUrl: "https://media.licdn.com/dms/image/v2/D4E0BAQHxjx-mXkYAmw/company-logo_200_200/company-logo_200_200/0/1690673514068/infordoc_digital_logo?e=1783555200&v=beta&t=jbqqF-5KUThOwtmctipsVY8tsjDttMqKgHRjD-_xoNA",
+    distancia: "7.2 km",
+    statusOcupacao: "moderado",
+    porcentagemOcupacao: 55,
+    avaliacao: 4.8,
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 5.0, higiene: 5.0 },
+    coordenadas: [-46.6235237, -23.510714], 
+    tags: ["Mais Próximas", "Premium"],
+  },
+  {
+    id: "2",
+    nome: "Barbearia Corleone - Jardins",
+    logoUrl: "https://images.unsplash.com/photo-1585747860715-2ba37e788b70?w=150&h=150&fit=crop&q=80",
+    distancia: "1.2 km",
+    statusOcupacao: "tranquilo",
+    porcentagemOcupacao: 25,
+    avaliacao: 4.9,
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 4.9, higiene: 4.8 },
+    coordenadas: [-46.6624, -23.5616],
+    tags: ["Abertas", "Premium"],
+  },
+  {
+    id: "3",
+    nome: "Seu Elias",
+    logoUrl: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=150&h=150&fit=crop&q=80",
+    distancia: "3.8 km",
+    statusOcupacao: "lotado",
+    porcentagemOcupacao: 90,
+    avaliacao: 4.7,
+    detalhesAvaliacao: { atendimento: 4.8, ambiente: 4.6, higiene: 4.7 },
+    coordenadas: [-46.6701, -23.5705],
+    tags: ["Abertas", "Mais Próximas"],
+  },
+  {
+    id: "4",
+    nome: "Cavalera Barber Shop - Bixiga",
+    logoUrl: "https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=150&h=150&fit=crop&q=80",
+    distancia: "2.5 km",
+    statusOcupacao: "moderado",
+    porcentagemOcupacao: 65,
+    avaliacao: 4.8,
+    detalhesAvaliacao: { atendimento: 4.9, ambiente: 4.8, higiene: 4.8 },
+    coordenadas: [-46.6433, -23.5558], 
+    tags: ["Abertas", "Mais Próximas"],
+  },
+  {
+    id: "5",
+    nome: "Retro Hair - Pinheiros",
+    logoUrl: "https://images.unsplash.com/photo-1599351431202-1e0f0137899a?w=150&h=150&fit=crop&q=80",
+    distancia: "4.1 km",
+    statusOcupacao: "tranquilo",
+    porcentagemOcupacao: 40,
+    avaliacao: 4.6,
+    detalhesAvaliacao: { atendimento: 4.7, ambiente: 4.8, higiene: 4.5 },
+    coordenadas: [-46.6853, -23.5642], 
+    tags: ["Abertas", "Premium"],
+  },
+  {
+    id: "6",
+    nome: "Garagem Barba e Cabelo - Moema",
+    logoUrl: "https://images.unsplash.com/photo-1512690459411-b9245aed614b?w=150&h=150&fit=crop&q=80",
+    distancia: "5.3 km",
+    statusOcupacao: "lotado",
+    porcentagemOcupacao: 85,
+    avaliacao: 4.9,
+    detalhesAvaliacao: { atendimento: 5.0, ambiente: 4.9, higiene: 4.9 },
+    coordenadas: [-46.6661, -23.6025], 
+    tags: ["Premium"],
+  },
+  {
+    id: "7",
+    nome: "The Barber - Tatuapé",
+    logoUrl: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?w=150&h=150&fit=crop&q=80",
+    distancia: "9.8 km",
+    statusOcupacao: "tranquilo",
+    porcentagemOcupacao: 15,
+    avaliacao: 4.5,
+    detalhesAvaliacao: { atendimento: 4.6, ambiente: 4.4, higiene: 4.7 },
+    coordenadas: [-46.5742, -23.5412], 
+    tags: ["Abertas"],
+  },
+];
 
 // ======================================================
 // COMPONENTE PRINCIPAL
@@ -180,7 +262,7 @@ export default function MapaPage() {
 
         wrapper.addEventListener("click", () => {
           handleSelecionarUnidade(barbearia);
-  
+          
         });
 
         const marker = new maplibregl.default.Marker({
@@ -233,7 +315,6 @@ export default function MapaPage() {
 
   const handleSelecionarUnidade = async (barbearia: Barbearia) => {
     focarNaBarbearia(barbearia);
-    if (!coords) return;
 
     if (!coords) {
       console.info('Aguardando sua localização...');
