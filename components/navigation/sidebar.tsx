@@ -1,8 +1,19 @@
 "use client";
 
 import { motion, DragControls } from "framer-motion";
-// Ajuste o caminho da interface conforme a sua pasta
+import { ArrowLeft, Car, Footprints, TrainFront, Star, X } from "lucide-react";
 import { Barbearia } from "@/utils/barbeariasData"; 
+
+// Componentes do shadcn/ui (certifique-se de tê-los instalados via CLI)
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const ESTADOS_BR = [
   "Todos", "SP", "RJ", "MG", "ES", "PR", "SC", "RS", 
@@ -41,11 +52,15 @@ export default function Sidebar({
   handleSelecionarUnidade,
   limparRota
 }: SidebarProps) {
+  
+  // Média de avaliação calculada de forma segura
+  const mediaAvaliacao = filiaisFiltradas.length > 0 
+    ? (filiaisFiltradas.reduce((acc, item) => acc + item.avaliacao, 0) / filiaisFiltradas.length).toFixed(1)
+    : "0.0";
+
   return (
     <motion.aside
-      // Restauração da classe map-sidebar original + background fixo escuro
-      // Os overrides (md:!) impedem a animação do mobile de achatar a sidebar no Desktop
-      className="map-sidebar bg-[#0f0f0f] md:!h-screen md:!top-0 md:!bottom-auto md:!transform-none"
+      className="map-sidebar bg-[#0f0f0f] text-white md:!h-screen md:!top-0 md:!bottom-auto md:!transform-none border-r border-white/5"
       drag="y"
       dragControls={dragControls}
       dragListener={false}
@@ -62,84 +77,91 @@ export default function Sidebar({
       }}
       transition={{ type: "spring", damping: 22, stiffness: 280 }}
     >
+      {/* Área de arraste para Mobile */}
       <div 
         className="flex flex-col flex-shrink-0 cursor-grab active:cursor-grabbing w-full"
         onPointerDown={(e) => dragControls.start(e)}
         style={{ touchAction: "none" }}
       >
         <div className="mobile-sheet-handle-area md:hidden" onClick={() => setIsExpanded(!isExpanded)}>
-          <div className="mobile-sheet-handle" />
+          <div className="mobile-sheet-handle bg-white/20 w-12 h-1.5 rounded-full mx-auto my-3" />
         </div>
 
-        <div className="sidebar-header">
+        {/* Header da Sidebar */}
+        <div className="sidebar-header p-4 pb-2 md:pt-6">
           <div className="hidden md:block">
-            <button 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => window.history.back()}
-              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors cursor-pointer mb-5 text-sm font-medium tracking-wide select-none group"
+              className="text-white/80 hover:text-white hover:bg-white/5 gap-2 pl-0 mb-4 group"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transform group-hover:-translate-x-0.5 transition-transform">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-              </svg>
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
               Voltar
-            </button>
+            </Button>
 
-            <h1 className="map-title">Nossas Filiais</h1>
-            <p className="map-subtitle">Encontre a unidade ideal para seu atendimento</p>
+            <h1 className="text-xl font-bold tracking-tight">Nossas Filiais</h1>
+            <p className="text-xs text-muted-foreground mt-1">Encontre a unidade ideal para seu atendimento</p>
             
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-value">{filiaisFiltradas.length}</div>
-                <div className="stat-label">Filiais</div>
+            {/* Stats Grid usando utilitários do Tailwind */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-[#a3e635]">{filiaisFiltradas.length}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Filiais</div>
               </div>
-              <div className="stat-card">
-                <div className="stat-value">
-                  {filiaisFiltradas.length > 0 
-                    ? (filiaisFiltradas.reduce((acc, item) => acc + item.avaliacao, 0) / filiaisFiltradas.length).toFixed(1)
-                    : "0.0"}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-[#a3e635] flex items-center justify-center gap-1">
+                  <Star className="h-4 w-4 fill-current" /> {mediaAvaliacao}
                 </div>
-                <div className="stat-label">Avaliação</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Avaliação</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="filter-container">
-          {/* O novo Select de Estados inserido na estrutura original */}
-          <div className="mb-3 px-4 md:px-0" onPointerDown={(e) => e.stopPropagation()}>
-            <select 
-              className="w-full bg-white/5 border border-white/10 text-white/90 text-sm rounded-xl px-4 py-2 outline-none appearance-none focus:border-[#a3e635] transition-colors"
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
-            >
-              {ESTADOS_BR.map(uf => (
-                <option key={uf} value={uf} className="bg-[#0f0f0f]">
-                  {uf === "Todos" ? "Todos os Estados" : uf}
-                </option>
-              ))}
-            </select>
+        {/* Container de Filtros */}
+        <div className="filter-container p-4 pt-2 space-y-3">
+          {/* Select customizado do Shadcn para Estados */}
+          <div onPointerDown={(e) => e.stopPropagation()}>
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="w-full bg-white/5 border-white/10 text-white focus:ring-[#a3e635] focus:border-[#a3e635] rounded-xl h-10">
+                <SelectValue placeholder="Selecione o Estado" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#0f0f0f] border-white/10 text-white max-h-60">
+                {ESTADOS_BR.map(uf => (
+                  <SelectItem key={uf} value={uf} className="focus:bg-white/10 focus:text-white cursor-pointer">
+                    {uf === "Todos" ? "Todos os Estados" : uf}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="filter-row flex gap-2 overflow-x-auto no-scrollbar" onPointerDown={(e) => e.stopPropagation()}>
-            {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
-              <button
-                key={tag}
-                onClick={() => setFiltroTag(filtroTag === tag ? null : tag)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${
-                  filtroTag === tag
-                    ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
-                    : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
+          {/* Badges de Tags para filtros rápidos */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar py-1" onPointerDown={(e) => e.stopPropagation()}>
+            {["Abertas", "Mais Próximas", "Premium"].map((tag) => {
+              const isSelected = filtroTag === tag;
+              return (
+                <button
+                  key={tag}
+                  onClick={() => setFiltroTag(isSelected ? null : tag)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-300 border whitespace-nowrap cursor-pointer ${
+                    isSelected
+                      ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
+                      : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
+      {/* Lista de Unidades */}
       <div 
-        className="branch-list"
+        className="branch-list px-4 pb-6 overflow-y-auto space-y-3 dynamic-calc-height"
         onPointerDown={(e) => {
           if ((e.target as HTMLElement).classList.contains('branch-list')) {
             dragControls.start(e);
@@ -147,92 +169,95 @@ export default function Sidebar({
         }}
       >
         {rotaAtivaId && (
-          <div className="mb-2">
-            <button 
-              onClick={limparRota}
-              className="w-full bg-red-500/10 text-red-500 border border-red-500/20 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-500/20 transition-all cursor-pointer"
-            >
-              ✕ Limpar rota ativa
-            </button>
-          </div>
+          <Button 
+            variant="destructive"
+            size="sm"
+            onClick={limparRota}
+            className="w-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 rounded-xl h-10 gap-2"
+          >
+            <X className="h-4 w-4" /> Limpar rota ativa
+          </Button>
         )}
 
         {filiaisFiltradas.map((barbearia) => {
           const isRouteActive = rotaAtivaId === barbearia.id;
           const isActive = filialAtiva === barbearia.id; 
           
-          const highlightClass = isRouteActive 
-              ? 'border-[#a3e635] shadow-[0_0_15px_rgba(163,230,53,0.15)] bg-white/10' 
-              : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10';
-
           return (
             <div
               key={barbearia.id}
-              className={`branch-card transition-all duration-300 border ${highlightClass}`}
               onClick={() => handleSelecionarUnidade(barbearia)}
+              className={`relative branch-card p-4 rounded-xl transition-all duration-300 border cursor-pointer group ${
+                isRouteActive 
+                  ? 'border-[#a3e635] shadow-[0_0_15px_rgba(163,230,53,0.15)] bg-white/10' 
+                  : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10'
+              }`}
             >
-              <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-[#a3e635] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ opacity: isRouteActive ? 1 : undefined }}></div>
+              {/* Indicador lateral esquerdo para rotas ativas */}
+              <div 
+                className="absolute left-0 top-0 w-1 h-full bg-[#a3e635] rounded-l-xl transition-opacity duration-300" 
+                style={{ opacity: isRouteActive ? 1 : 0 }}
+              />
 
-              <div className="branch-header">
-                <h3 className="branch-name">{barbearia.nome}</h3>
-                <div className="branch-rating-badge">
-                  <span>★</span>
+              <div className="flex justify-between items-start gap-2 mb-2">
+                <h3 className="font-bold text-sm tracking-wide text-white group-hover:text-[#a3e635] transition-colors">
+                  {barbearia.nome}
+                </h3>
+                <Badge className="bg-white/10 text-white hover:bg-white/10 flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md shrink-0">
+                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                   {barbearia.avaliacao.toFixed(1)}
-                </div>
+                </Badge>
               </div>
 
-              <div className="branch-meta-row">
-                <span className="branch-distance">{barbearia.distancia}</span>
-                <div className="branch-live-occupancy">
-                  <span className={`occupancy-dot ${barbearia.statusOcupacao === "lotado" ? "busy" : ""}`} />
+              <div className="flex items-center justify-between text-xs text-white/60">
+                <span>{barbearia.distancia}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full ${barbearia.statusOcupacao === "lotado" ? "bg-red-500 animate-pulse" : "bg-emerald-500"}`} />
                   <span>{barbearia.porcentagemOcupacao}% ocupado</span>
                 </div>
               </div>
 
+              {/* Seção Expandida (Detalhes e Agendamento) */}
               {isActive && (
-                <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
+                <div className="mt-4 pt-4 border-t border-white/10 space-y-4">
                   {routeEtas ? (
-                    <div className="flex gap-2">
-                      <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>
-                        </svg>
-                        <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.car / 60)} min</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-2 flex flex-col items-center justify-center gap-1 transition-colors hover:bg-white/10">
+                        <Car className="h-4 w-4 text-white/70" />
+                        <span className="text-white font-bold text-[11px]">{Math.ceil(routeEtas.car / 60)} min</span>
                       </div>
-                      <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                          <path d="M8 6v6"/><path d="M15 6v6"/><path d="M2 12h19.6"/><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3"/><circle cx="7" cy="18" r="2"/><path d="M9 18h6"/><circle cx="17" cy="18" r="2"/>
-                        </svg>
-                        <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.transit / 60)} min</span>
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-2 flex flex-col items-center justify-center gap-1 transition-colors hover:bg-white/10">
+                        <TrainFront className="h-4 w-4 text-white/70" />
+                        <span className="text-white font-bold text-[11px]">{Math.ceil(routeEtas.transit / 60)} min</span>
                       </div>
-                      <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                          <path d="M12 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M11 21l-1-4-2-1V9c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v7l-2 1-1 4"/>
-                        </svg>
-                        <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.walk / 60)} min</span>
+                      <div className="bg-white/5 border border-white/5 rounded-xl p-2 flex flex-col items-center justify-center gap-1 transition-colors hover:bg-white/10">
+                        <Footprints className="h-4 w-4 text-white/70" />
+                        <span className="text-white font-bold text-[11px]">{Math.ceil(routeEtas.walk / 60)} min</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center py-4 bg-white/5 rounded-xl border border-white/5">
+                    <div className="flex items-center justify-center py-3 bg-white/5 rounded-xl border border-white/5">
                       <span className="text-xs text-white/50 animate-pulse tracking-wider">Calculando melhor rota...</span>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-[10px] text-white/50 pt-1">
-                    <p>Cortesia <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</strong></p>
-                    <p>Ambiente <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</strong></p>
-                    <p>Higiene <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</strong></p>
+                  {/* Sub-avaliações */}
+                  <div className="grid grid-cols-3 gap-1 text-center text-[10px] text-white/50 bg-black/20 py-2 rounded-lg">
+                    <p>Cortesia <strong className="text-white block text-xs mt-0.5">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</strong></p>
+                    <p>Ambiente <strong className="text-white block text-xs mt-0.5">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</strong></p>
+                    <p>Higiene <strong className="text-white block text-xs mt-0.5">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</strong></p>
                   </div>
 
-                  <button
+                  {/* Botão Principal de Ação */}
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       alert(`Abrindo checkout da filial ${barbearia.nome}`);
                     }}
-                    className="w-full mt-2 bg-[#a3e635] text-black font-bold py-3 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-[0_4px_14px_rgba(163,230,53,0.3)] cursor-pointer"
+                    className="w-full bg-[#a3e635] text-black font-bold hover:bg-[#b2f047] transition-all duration-300 shadow-[0_4px_14px_rgba(163,230,53,0.3)] rounded-xl text-xs tracking-wider"
                   >
                     AGENDAR NESTA UNIDADE
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

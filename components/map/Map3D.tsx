@@ -14,7 +14,7 @@ interface Branch {
 }
 
 const BRANCHES: Branch[] = [
-  {
+  { 
     id: 1,
     name: 'Black Diamond Centro',
     distance: '1.2 km',
