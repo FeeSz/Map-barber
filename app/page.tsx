@@ -2,19 +2,32 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { motion, useDragControls } from "framer-motion";
+import { useDragControls } from "framer-motion";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// IMPORTAÇÕES DE DADOS E UTILS
-import { listaCompletaBarbearias } from "./utils/barbeariasData";
+// Dados estáticos das barbearias e o tipo Barbearia, separados em arquivo próprio
+// para não poluir esse componente com centenas de linhas de mock
+import { listaCompletaBarbearias, Barbearia } from "./utils/barbeariasData";
+
+// Hook personalizado que encapsula o watchPosition do navegador —
+// retorna as coordenadas atuais do usuário em tempo real
 import { useGeolocation } from './hooks/useGeolocation';
+
+// Funções que criam as layers do MapLibre: a linha de rota e o ponto de localização do usuário
+// Ficam fora do componente porque são puras — não dependem de estado React
 import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
-import { fetchRoute, RouteData } from './utils/fetchRoute';
 
-// ======================================================
-// COMPONENTE DO MARCADOR
-// ======================================================
+// Faz a chamada à OSRM Demo API e retorna o GeoJSON da rota + tempos estimados por modal
+import { fetchRoute } from './utils/fetchRoute';
 
+// Componentes de UI separados para manter esse arquivo focado só na lógica do mapa
+import SearchBar from "@/components/navigation/searchbar";
+import Sidebar from "@/components/navigation/sidebar";
+
+// ─── Marcador visual no mapa ────────────────────────────────────────────────
+// Componente simples que renderiza o pin de cada barbearia.
+// Recebe isActive para aplicar o efeito de hover/seleção via CSS.
+// É montado via createPortal diretamente nos elementos DOM que o MapLibre gerencia.
 interface MarkerProps {
   logoUrl: string;
   nome: string;
@@ -26,95 +39,95 @@ function BarberMarker({ logoUrl, nome, isActive }: MarkerProps) {
     <div className={`premium-marker ${isActive ? "marker-active" : ""}`}>
       <div className="pulse-glow" />
       <div className="marker-logo-container">
-        <img
-          src={logoUrl}
-          alt={nome}
-          className="w-full h-full object-cover select-none pointer-events-none"
-        />
+        <img src={logoUrl} alt={nome} className="w-full h-full object-cover select-none pointer-events-none" />
       </div>
     </div>
   );
 }
 
-// ======================================================
-// INTERFACES
-// ======================================================
-// Nota: Se você já exportou esta interface no barbeariasData.ts,
-// você pode apagá-la daqui e importá-la lá em cima.
-export interface Barbearia {
-  id: string;
-  nome: string;
-  logoUrl: string;
-  distancia: string;
-  statusOcupacao: "tranquilo" | "moderado" | "lotado";
-  porcentagemOcupacao: number;
-  avaliacao: number;
-  detalhesAvaliacao: {
-    atendimento: number;
-    ambiente: number;
-    higiene: number;
-  };
-  coordenadas: [number, number];
-  tags: string[];
-}
-
-// ======================================================
-// COMPONENTE PRINCIPAL
-// ======================================================
-
+// ─── Componente principal da página ─────────────────────────────────────────
 export default function MapaPage() {
+  // Coordenadas GPS do usuário, atualizadas em tempo real pelo hook
   const { coords } = useGeolocation();
+
+  // Controla o gesto de drag da sidebar no mobile (Framer Motion)
   const dragControls = useDragControls();
+  
+  // ── Estados do mapa ──────────────────────────────────────────────────────
 
-  // ESTADOS DO MAPA E ROTAS
+  // ID da barbearia cujo trajeto está atualmente desenhado no mapa
   const [rotaAtivaId, setRotaAtivaId] = useState<string | null>(null);
+
+  // Tempos estimados de chegada por modal (carro, a pé, transporte público)
+  // chegam null enquanto a rota ainda está sendo calculada
   const [routeEtas, setRouteEtas] = useState<{ car: number, walk: number, transit: number } | null>(null);
+
+  // Sinaliza que o mapa terminou de carregar tiles e está pronto para receber layers
   const [mapaPronto, setMapaPronto] = useState(false);
+
+  // Controla se a sidebar mobile está expandida (85vh) ou recolhida (28vh)
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // ── Estados de dados e filtros ───────────────────────────────────────────
 
-  // ESTADOS DOS DADOS
+  // Lista completa de barbearias — imutável durante a sessão, por isso sem setter exposto
   const [filiais] = useState<Barbearia[]>(listaCompletaBarbearias);
-  const [filialAtiva, setFilialAtiva] = useState<string | null>(null);
-  const [busca, setBusca] = useState("");
-  const [filtroTag, setFiltroTag] = useState<string | null>(null);
-  const [portalElements, setPortalElements] = useState<
-    Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }>
-  >([]);
 
-  // REFERÊNCIAS
+  // ID da barbearia cujo card está aberto na sidebar (expande os detalhes)
+  const [filialAtiva, setFilialAtiva] = useState<string | null>(null);
+
+  // Texto livre da barra de pesquisa, filtra por nome
+  const [busca, setBusca] = useState("");
+
+  // Chip de tag ativo (ex: "Abertas", "Premium") — null significa sem filtro
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
+
+  // Filtro por estado — "Todos" desativa o filtro geográfico
+  const [filtroEstado, setFiltroEstado] = useState("Todos");
+  
+  // Lista de elementos DOM que o MapLibre criou para cada marcador,
+  // usada pelo createPortal para injetar os componentes React dentro deles
+  const [portalElements, setPortalElements] = useState<Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }>>([]);
+
+  // ── Refs ─────────────────────────────────────────────────────────────────
+
+  // Referência ao elemento <div> que serve de container do canvas do MapLibre
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // Instância do mapa — em ref (não estado) para não provocar re-renders ao atualizar
   const mapRef = useRef<any>(null);
+
+  // Lista de instâncias de Marker do MapLibre para poder removê-los quando necessário
   const markersRef = useRef<any[]>([]);
+
+  // ID do requestAnimationFrame da animação de traçado de rota,
+  // guardado em ref para poder cancelar a qualquer momento sem re-render
   const animationRef = useRef<number | null>(null);
 
-  const userProfilePic = "https://i.pravatar.cc/150?img=11";
+  const userProfilePic = "https://i.pravatar.cc/150?img=11"; 
 
-  // ======================================================
-  // CLEANUP DE MEMÓRIA (Evitar memory leaks na animação)
-  // ======================================================
+  // ─── Cleanup da animação ao desmontar o componente ──────────────────────
+  // Garante que nenhum rAF fique rodando em background se o usuário navegar para outra página
   useEffect(() => {
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
 
-  // ======================================================
-  // MAPA - INICIALIZAÇÃO
-  // ======================================================
+  // ─── Inicialização do mapa ───────────────────────────────────────────────
+  // Roda uma única vez. O guard `mapRef.current` evita que o StrictMode do Next.js
+  // (que monta/desmonta duas vezes em dev) crie dois mapas simultâneos.
+  // O mapa começa com zoom 4 centrado no Brasil para depois enquadrar as filiais.
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-
     let mapaInstancia: any;
 
     import("maplibre-gl").then((maplibregl) => {
       if (!mapContainerRef.current) return;
-
-mapaInstancia = new maplibregl.default.Map({
+      mapaInstancia = new maplibregl.default.Map({
         container: mapContainerRef.current,
         style: "https://tiles.openfreemap.org/styles/fiord",
-        center: [-53.2000, -10.3000], 
+        center: [-53.2000, -10.3000],
         zoom: 4,      
         pitch: 0,     
         bearing: 0,   
@@ -125,18 +138,22 @@ mapaInstancia = new maplibregl.default.Map({
 
       mapRef.current = mapaInstancia;
 
+      // Só após o evento 'load' o mapa está pronto para receber sources e layers —
+      // qualquer chamada antes disso resulta em erro silencioso
       mapaInstancia.on("load", () => {
         setMapaPronto(true);
-        initRouteLayers(mapaInstancia);
-        initUserLocationLayers(mapaInstancia);
+        initRouteLayers(mapaInstancia);       // cria source "route" + layers da linha
+        initUserLocationLayers(mapaInstancia); // cria source "user-location" + ponto lime animado
       });
 
+      // Suprime erros de rede esperados (tiles que falharam por timeout, etc.)
       mapaInstancia.on("error", (e: any) => {
         if (e?.error?.message?.includes("Failed to fetch")) return;
         console.error("[MapLibre]", e);
       });
     });
 
+    // Cleanup: remove o mapa ao desmontar para liberar o contexto WebGL
     return () => {
       if (mapaInstancia) {
         mapaInstancia.remove();
@@ -145,9 +162,9 @@ mapaInstancia = new maplibregl.default.Map({
     };
   }, []);
 
-  // ======================================================
-  // GEOLOCALIZAÇÃO EM TEMPO REAL
-  // ======================================================
+  // ─── Atualização do ponto de localização em tempo real ──────────────────
+  // Toda vez que o hook useGeolocation emite novas coordenadas,
+  // apenas atualiza o GeoJSON da source — não recria nada, zero jank.
   useEffect(() => {
     const map = mapRef.current;
     if (map && coords && mapaPronto) {
@@ -161,14 +178,17 @@ mapaInstancia = new maplibregl.default.Map({
     }
   }, [coords, mapaPronto]);
 
-  // ======================================================
-  // MARCADORES E ENQUADRAMENTO INICIAL
-  // ======================================================
+  // ─── Criação dos pins e enquadramento inicial ────────────────────────────
+  // Aguarda o mapa estar pronto, depois percorre todas as filiais:
+  // cria um elemento DOM por barbearia, instancia o Marker do MapLibre nele,
+  // e registra o elemento no estado para o createPortal injetar o React Component.
+  // Por fim, usa fitBounds para que o mapa enquadre todas as filiais na tela.
   useEffect(() => {
     const mapa = mapRef.current;
     if (!mapa || !mapaPronto || filiais.length === 0) return;
 
     import("maplibre-gl").then((maplibregl) => {
+      // Remove markers antigos antes de recriar (evita duplicatas)
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
 
@@ -178,14 +198,12 @@ mapaInstancia = new maplibregl.default.Map({
       filiais.forEach((barbearia) => {
         bounds.extend(barbearia.coordenadas);
 
+        // Elemento DOM "vazio" — o React vai renderizar o BarberMarker dentro dele via portal
         const wrapper = document.createElement("div");
         wrapper.className = "map-marker-wrapper";
         wrapper.addEventListener("click", () => handleSelecionarUnidade(barbearia));
 
-        const marker = new maplibregl.default.Marker({
-          element: wrapper,
-          anchor: "bottom",
-        })
+        const marker = new maplibregl.default.Marker({ element: wrapper, anchor: "bottom" })
           .setLngLat(barbearia.coordenadas)
           .addTo(mapa);
 
@@ -195,13 +213,11 @@ mapaInstancia = new maplibregl.default.Map({
 
       setPortalElements(novosPortais);
 
-      mapa.fitBounds(bounds, {
-        padding: { top: 150, bottom: 350, left: 60, right: 60 },
-        maxZoom: 16,
-        duration: 1500,
-      });
+      // Padding generoso para não cobrir a sidebar nem a search bar
+      mapa.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 60, right: 60 }, maxZoom: 16, duration: 1500 });
     });
 
+    // Cleanup: remove os markers se as filiais mudarem ou o componente desmontar
     return () => {
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
@@ -209,119 +225,106 @@ mapaInstancia = new maplibregl.default.Map({
     };
   }, [mapaPronto, filiais]);
 
-  // ======================================================
-  // FUNÇÕES DE ROTA E INTERAÇÃO OTIMIZADAS
-  // ======================================================
+  // ─── Seleção de unidade: foco no mapa + traçado de rota ─────────────────
+  // Chamado tanto pelo clique no card da sidebar quanto pelo clique no pin do mapa.
+  // Se ainda não há GPS, apenas voa até a barbearia sem tentar calcular rota.
+  // Se há GPS, chama a OSRM, anima o traçado quadro a quadro via rAF e atualiza os ETAs.
   const handleSelecionarUnidade = async (barbearia: Barbearia) => {
-    // 1. UI Imediata: Abre o card na hora, sem esperar cálculos
     setFilialAtiva(barbearia.id);
-
     const map = mapRef.current;
     if (!map) return;
 
-    // Se o usuário não deu permissão de localização, apenas foca na barbearia
+    // Sem localização: só centraliza o mapa na barbearia e encerra
     if (!coords) {
-      console.info('Aguardando localização para traçar rota. Focando no destino...');
-      map.flyTo({
-        center: barbearia.coordenadas,
-        zoom: 18, pitch: 55, bearing: -20, speed: 1.2, essential: true
-      });
+      map.flyTo({ center: barbearia.coordenadas, zoom: 18, pitch: 55, bearing: -20, speed: 1.2, essential: true });
       return;
     }
 
-    // 2. Prepara o mapa para a nova rota (Limpa rota anterior instantaneamente)
+    // Cancela qualquer animação de rota anterior que ainda esteja rodando
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     setRouteEtas(null);
     setRotaAtivaId(barbearia.id);
 
+    // Limpa a rota desenhada no mapa antes de buscar a nova
     const routeSource = map.getSource('route') as any;
-    if (routeSource) {
-      routeSource.setData({ type: 'FeatureCollection', features: [] });
-    }
+    if (routeSource) routeSource.setData({ type: 'FeatureCollection', features: [] });
 
-    // 3. Busca a rota na API
+    // Busca a rota na OSRM — retorna o GeoJSON da linha e os tempos estimados
     const data = await fetchRoute(coords, barbearia.coordenadas);
-
+    
     if (data && routeSource) {
       setRouteEtas(data.durations);
 
+      // Enquadra o mapa para mostrar origem + destino com a rota completa visível
       import("maplibre-gl").then((maplibregl) => {
         const bounds = new maplibregl.default.LngLatBounds();
-        data.feature.geometry.coordinates.forEach((coord: any) => {
-          bounds.extend(coord as [number, number]);
-        });
-
-        // Foca abrangendo origem e destino de forma fluida
-        map.fitBounds(bounds, {
-          padding: { top: 150, bottom: 350, left: 60, right: 60 },
-          maxZoom: 16,
-          duration: 1200
-        });
+        data.feature.geometry.coordinates.forEach((coord: any) => bounds.extend(coord as [number, number]));
+        map.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 60, right: 60 }, maxZoom: 16, duration: 1200 });
       });
-
-      // 4. Lógica de Traçado Animado Otimizada
+      
+      // Animação de traçado progressivo: em vez de desenhar toda a linha de uma vez,
+      // revela fatias crescentes de coordenadas a cada frame — efeito de "desenhar" a rota
       const fullCoordinates = data.feature.geometry.coordinates;
       let currentFrame = 0;
-      const totalFrames = 30; // Reduzido para 30 frames (mais rápido/snappy)
+      const totalFrames = 30; 
       const pointsPerFrame = Math.max(1, Math.ceil(fullCoordinates.length / totalFrames));
 
       const animateRoute = () => {
         currentFrame++;
         const currentPoints = currentFrame * pointsPerFrame;
-
         routeSource.setData({
           type: 'FeatureCollection',
-          features: [{
-            type: 'Feature',
-            geometry: {
-              type: 'LineString',
-              coordinates: fullCoordinates.slice(0, currentPoints)
-            },
-            properties: {}
-          }]
+          features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: fullCoordinates.slice(0, currentPoints) }, properties: {} }]
         });
 
+        // Continua animando até revelar todos os pontos da rota
         if (currentPoints < fullCoordinates.length) {
           animationRef.current = requestAnimationFrame(animateRoute);
         }
       };
-
       animationRef.current = requestAnimationFrame(animateRoute);
     }
   };
 
+  // ─── Limpar rota ─────────────────────────────────────────────────────────
+  // Cancela animação pendente, reseta todos os estados relacionados à rota,
+  // apaga a linha do mapa e devolve o zoom ao panorama geral do Brasil
   const limparRota = () => {
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     setRouteEtas(null);
     setRotaAtivaId(null);
     setFilialAtiva(null);
-
+    
     const map = mapRef.current;
     if (map) {
       const source = map.getSource('route') as any;
       if (source) source.setData({ type: 'FeatureCollection', features: [] });
-
-      // Opcional: Voltar o zoom para mostrar todas as filiais
-      map.flyTo({ zoom: 12, pitch: 0, speed: 1.2 });
+      map.flyTo({ zoom: 4, pitch: 0, speed: 1.2 });
     }
   };
 
-  // ======================================================
-  // OTIMIZAÇÃO: useMemo para buscas sem lag
-  // ======================================================
+  // ─── Filtro de filiais (memoizado) ───────────────────────────────────────
+  // Recalcula a lista apenas quando busca, filtroTag ou filtroEstado mudam —
+  // evita reprocessar o array inteiro em todo render causado por outros estados
   const filiaisFiltradas = useMemo(() => {
     return filiais
       .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
-      .filter((f) => !filtroTag || f.tags.includes(filtroTag));
-  }, [filiais, busca, filtroTag]);
+      .filter((f) => !filtroTag || f.tags.includes(filtroTag))
+      .filter((f) => {
+        if (filtroEstado === "Todos") return true;
+        return f.estado === filtroEstado || f.nome.includes(filtroEstado); 
+      });
+  }, [filiais, busca, filtroTag, filtroEstado]);
 
-  // ======================================================
-  // RENDERIZAÇÃO
-  // ======================================================
+  // ─── Renderização ────────────────────────────────────────────────────────
   return (
     <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
+      {/* Container do canvas do MapLibre — ocupa 100% do viewport por baixo de tudo */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
+      {/* Injeta cada BarberMarker dentro do elemento DOM que o MapLibre controla.
+          O createPortal é necessário porque o MapLibre gerencia esses elementos
+          fora da árvore React normal */}
       {portalElements.map(({ id, element, barbearia }) =>
         createPortal(
           <BarberMarker key={id} logoUrl={barbearia.logoUrl} nome={barbearia.nome} isActive={filialAtiva === id} />,
@@ -329,208 +332,30 @@ mapaInstancia = new maplibregl.default.Map({
         )
       )}
 
-      {/* BARRA DE PESQUISA E PERFIL */}
-      <div className="top-search-wrapper">
-        <div className="floating-search">
-          <input
-            type="text"
-            placeholder="Buscar por filiais, serviços..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-          />
-        </div>
-        <div className="profile-pic-container">
-          <img
-            src={userProfilePic}
-            alt="Perfil do Usuário"
-            className="user-profile-pic"
-          />
-        </div>
-      </div>
+      {/* Barra de pesquisa flutuante com foto de perfil — posicionada em absolute no topo */}
+      <SearchBar 
+        busca={busca} 
+        setBusca={setBusca} 
+        userProfilePic={userProfilePic} 
+      />
 
-      <motion.aside
-        className="map-sidebar"
-        drag="y"
+      {/* Sidebar com lista de filiais, filtros, cards e lógica de rota —
+          recebe tudo que precisa via props para ficar desacoplada desse arquivo */}
+      <Sidebar 
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
         dragControls={dragControls}
-        dragListener={false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={0.2}
-        onDragEnd={(event, info) => {
-          const offset = info.offset.y;
-          const velocity = info.velocity.y;
-          if (offset < -15 || velocity < -150) setIsExpanded(true);
-          else if (offset > 15 || velocity > 150) setIsExpanded(false);
-        }}
-        animate={{
-          height: isExpanded ? "85vh" : "28vh",
-        }}
-        transition={{ type: "spring", damping: 22, stiffness: 280 }}
-      >
-        <div
-          className="flex flex-col flex-shrink-0 cursor-grab active:cursor-grabbing w-full"
-          onPointerDown={(e) => dragControls.start(e)}
-          style={{ touchAction: "none" }}
-        >
-          <div className="mobile-sheet-handle-area md:hidden" onClick={() => setIsExpanded(!isExpanded)}>
-            <div className="mobile-sheet-handle" />
-          </div>
-
-          <div className="sidebar-header">
-            <div className="hidden md:block">
-              <button
-                onClick={() => window.history.back()}
-                className="flex items-center gap-2 text-white/90 hover:text-white transition-colors cursor-pointer mb-5 text-sm font-medium tracking-wide select-none group"
-              >
-                <svg
-                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className="transform group-hover:-translate-x-0.5 transition-transform"
-                >
-                  <line x1="19" y1="12" x2="5" y2="12"></line>
-                  <polyline points="12 19 5 12 12 5"></polyline>
-                </svg>
-                Voltar
-              </button>
-
-              <h1 className="map-title">Nossas Filiais</h1>
-              <p className="map-subtitle">Encontre a unidade ideal para seu atendimento</p>
-
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-value">{filiaisFiltradas.length}</div>
-                  <div className="stat-label">Filiais</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">
-                    {filiaisFiltradas.length > 0
-                      ? (filiaisFiltradas.reduce((acc, item) => acc + item.avaliacao, 0) / filiaisFiltradas.length).toFixed(1)
-                      : "0.0"}
-                  </div>
-                  <div className="stat-label">Avaliação</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="filter-container">
-            <div className="filter-row flex gap-2 overflow-x-auto no-scrollbar" onPointerDown={(e) => e.stopPropagation()}>
-              {["Abertas", "Mais Próximas", "Premium"].map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setFiltroTag(filtroTag === tag ? null : tag)}
-                  className={`px-4 py-2 rounded-full text-xs font-semibold transition-all duration-300 border cursor-pointer whitespace-nowrap ${filtroTag === tag
-                      ? "bg-[#a3e635] text-black border-[#a3e635] shadow-[0_0_12px_rgba(163,230,53,0.3)]"
-                      : "bg-white/5 text-white/70 border-white/5 hover:bg-white/10"
-                    }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="branch-list"
-          onPointerDown={(e) => {
-            if ((e.target as HTMLElement).classList.contains('branch-list')) {
-              dragControls.start(e);
-            }
-          }}
-        >
-          {rotaAtivaId && (
-            <div className="mb-2">
-              <button
-                onClick={limparRota}
-                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 py-2.5 rounded-xl text-sm font-semibold hover:bg-red-500/20 transition-all cursor-pointer"
-              >
-                ✕ Limpar rota ativa
-              </button>
-            </div>
-          )}
-
-          {filiaisFiltradas.map((barbearia) => {
-            const isRouteActive = rotaAtivaId === barbearia.id;
-            const isActive = filialAtiva === barbearia.id;
-
-            const highlightClass = isRouteActive
-              ? 'border-[#a3e635] shadow-[0_0_15px_rgba(163,230,53,0.15)] bg-white/10'
-              : 'border-white/5 bg-white/5 hover:border-white/20 hover:bg-white/10';
-
-            return (
-              <div
-                key={barbearia.id}
-                className={`branch-card transition-all duration-300 border ${highlightClass}`}
-                onClick={() => handleSelecionarUnidade(barbearia)}>
-                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-[#a3e635] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" style={{ opacity: isRouteActive ? 1 : undefined }}></div>
-                <div className="branch-header">
-                  <h3 className="branch-name">{barbearia.nome}</h3>
-                  <div className="branch-rating-badge">
-                    <span>★</span>
-                    {barbearia.avaliacao.toFixed(1)}
-                  </div>
-                </div>
-
-                <div className="branch-meta-row">
-                  <span className="branch-distance">{barbearia.distancia}</span>
-                  <div className="branch-live-occupancy">
-                    <span className={`occupancy-dot ${barbearia.statusOcupacao === "lotado" ? "busy" : ""}`} />
-                    <span>{barbearia.porcentagemOcupacao}% ocupado</span>
-                  </div>
-                </div>
-
-                {isActive && (
-                  <div className="mt-4 pt-4 border-t border-white/10 space-y-3">
-                    {routeEtas ? (
-                      <div className="flex gap-2">
-                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" />
-                          </svg>
-                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.car / 60)} min</span>
-                        </div>
-
-                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                            <path d="M8 6v6" /><path d="M15 6v6" /><path d="M2 12h19.6" /><path d="M18 18h3s.5-1.7.8-2.8c.1-.4.2-.8.2-1.2 0-.4-.1-.8-.2-1.2l-1.4-5C20.1 6.8 19.1 6 18 6H4a2 2 0 0 0-2 2v10h3" /><circle cx="7" cy="18" r="2" /><path d="M9 18h6" /><circle cx="17" cy="18" r="2" />
-                          </svg>
-                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.transit / 60)} min</span>
-                        </div>
-
-                        <div className="flex-1 bg-white/5 border border-white/5 rounded-xl p-2.5 flex flex-col items-center justify-center gap-1.5 transition-colors hover:bg-white/10">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/70">
-                            <path d="M12 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" /><path d="M11 21l-1-4-2-1V9c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v7l-2 1-1 4" />
-                          </svg>
-                          <span className="text-white font-bold text-xs">{Math.ceil(routeEtas.walk / 60)} min</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center py-4 bg-white/5 rounded-xl border border-white/5">
-                        <span className="text-xs text-white/50 animate-pulse tracking-wider">Calculando melhor rota...</span>
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] text-white/50 pt-1">
-                      <p>Cortesia <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.atendimento.toFixed(1)}</strong></p>
-                      <p>Ambiente <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.ambiente.toFixed(1)}</strong></p>
-                      <p>Higiene <strong className="text-white ml-1">{barbearia.detalhesAvaliacao.higiene.toFixed(1)}</strong></p>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        alert(`Abrindo checkout da filial ${barbearia.nome}`);
-                      }}
-                      className="w-full mt-2 bg-[#a3e635] text-black font-bold py-3 rounded-xl text-xs tracking-wide hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 shadow-[0_4px_14px_rgba(163,230,53,0.3)] cursor-pointer"
-                    >
-                      AGENDAR NESTA UNIDADE
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </motion.aside>
+        filiaisFiltradas={filiaisFiltradas}
+        filtroTag={filtroTag}
+        setFiltroTag={setFiltroTag}
+        filtroEstado={filtroEstado}
+        setFiltroEstado={setFiltroEstado}
+        rotaAtivaId={rotaAtivaId}
+        filialAtiva={filialAtiva}
+        routeEtas={routeEtas}
+        handleSelecionarUnidade={handleSelecionarUnidade}
+        limparRota={limparRota}
+      />
     </main>
   );
 }
