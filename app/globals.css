@@ -1,155 +1,36 @@
+/* ==========================================================================
+   1. IMPORTAÇÕES DE FRAMEWORKS (Tailwind e Shadcn)
+   ========================================================================== */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
+/* ==========================================================================
+   2. VARIÁVEIS GLOBAIS DE TEMA
+   ========================================================================== */
 :root {
+  --background: #030303;
+  --foreground: #f5f5f7;
   --brand-color: #a3e635;
   --brand-glow: rgba(163, 230, 53, 0.2);
   --apple-blur: blur(32px) saturate(180%);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
 }
 
-@theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --color-foreground: var(--foreground);
-  --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
+/* Reset básico de box-sizing e suavização de fontes */
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
-}
-
-* {
-  box-sizing: border-box;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html, body {
+body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden; /* Mantém o layout fixo para a navegação do mapa */
   background: var(--background);
   color: var(--foreground);
 }
 
-/* =======================================================
-   SIDEBAR PREMIUM
-   ======================================================= */
-
+/* ==========================================================================
+   3. SIDEBAR ESTRUTURAL (Layout Premium)
+   Estilização do painel lateral flutuante conforme design original
+   ========================================================================== */
 .map-sidebar {
   position: absolute;
   top: 20px;
@@ -163,12 +44,14 @@ html, body {
   overflow: hidden;
   backdrop-filter: var(--apple-blur);
   -webkit-backdrop-filter: var(--apple-blur);
+  /* Background fixo e robusto */
   background: linear-gradient(180deg, rgba(12, 12, 12, 0.96), rgba(8, 8, 8, 0.92));
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 32px;
   box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* Efeito de borda luminosa (borda interna brilhante) */
 .map-sidebar::before {
   content: "";
   position: absolute;
@@ -182,6 +65,7 @@ html, body {
   pointer-events: none;
 }
 
+/* Header da sidebar com blur */
 .sidebar-header {
   z-index: 10;
   padding: 28px 28px 20px;
@@ -191,6 +75,7 @@ html, body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Tipografia dos títulos */
 .map-title {
   margin: 0;
   font-size: 34px;
@@ -210,317 +95,31 @@ html, body {
   color: #86868b;
 }
 
-/* =======================================================
-   LISTA DE FILIAIS (Área de Rolagem Interna)
-   ======================================================= */
-
-.branch-list {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 0 20px 30px 20px;
-  scrollbar-width: none;
-}
-
-.branch-list::-webkit-scrollbar { display: none; }
-
-.branch-card {
-  position: relative;
-  padding: 20px;
-  border-radius: 24px;
-  cursor: pointer;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease, background 0.35s ease;
-}
-
-.branch-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(180deg, var(--brand-color), transparent);
-  opacity: 0;
-  transition: 0.3s;
-}
-
-.branch-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(163, 230, 53, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-}
-
-.branch-card:hover::before { opacity: 1; }
-
-.branch-card.active {
-  background: linear-gradient(180deg, rgba(163, 230, 53, 0.12), rgba(163, 230, 53, 0.04));
-  border-color: rgba(163, 230, 53, 0.5);
-  box-shadow: 0 0 30px rgba(163, 230, 53, 0.15);
-}
-
-.branch-card.active::before { opacity: 1; }
-
-.branch-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.branch-name {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: white;
-}
-
-.branch-rating-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ffb800;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.branch-meta-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
-  font-size: 13px;
-}
-
-.branch-distance { color: var(--brand-color); font-weight: 700; }
-
-.branch-live-occupancy {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #8f8f8f;
-}
-
-.occupancy-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 10px #22c55e;
-}
-
-.occupancy-dot.busy { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
-
-/* =======================================================
-   BARRA DE BUSCA E PERFIL
-   ======================================================= */
-
-.top-search-wrapper {
-  position: absolute;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 99999;
-  width: 90%;
-  max-width: 520px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.floating-search {
-  flex: 1;
-  position: relative;
-}
-
-.floating-search input {
-  width: 100%;
-  padding: 16px 24px;
-  border-radius: 999px;
-  background: rgba(15, 15, 15, 0.65);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid #000000;
-  color: white;
-  font-size: 15px;
-  transition: 0.3s ease;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-}
-
-.floating-search input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.floating-search input:focus {
-  outline: none;
-  border-color: var(--brand-color);
-  box-shadow: 0 0 25px rgba(163, 230, 53, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-}
-
-.profile-pic-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px;
-  border-radius: 50%;
-  background: rgba(15, 15, 15, 0.65);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid #000000;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
-
-.profile-pic-container:hover {
-  transform: scale(1.05);
-  border-color: var(--brand-color);
-}
-
-.user-profile-pic {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* =======================================================
-   MARCADORES
-   ======================================================= */
-
-.premium-marker {
-  position: relative;
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  perspective: 1000px;
-}
-
+/* ==========================================================================
+   4. MARCADORES DO MAPA (Fix para imagens redondas)
+   Estes estilos garantem que as logos das barbearias fiquem circulares
+   ========================================================================== */
 .marker-logo-container {
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  background: rgba(20, 20, 20, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
-  overflow: hidden;
-  z-index: 2;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  transform: rotateX(10deg) rotateY(-10deg);
-}
-
-.marker-logo-container img { width: 100%; height: 100%; object-fit: cover; }
-
-.premium-marker:hover .marker-logo-container,
-.marker-active .marker-logo-container {
-  transform: scale(1.15) rotateX(0) rotateY(0) translateY(-8px);
-  border-color: var(--brand-color);
-  box-shadow: 0 16px 32px rgba(163, 230, 53, 0.3);
-}
-
-.pulse-glow {
-  position: absolute;
-  bottom: 2px;
-  width: 32px;
-  height: 12px;
-  background: var(--brand-color);
-  border-radius: 50%;
-  filter: blur(6px);
-  opacity: 0.6;
-  animation: spatialPulse 2.5s infinite ease-in-out;
-}
-
-@keyframes spatialPulse {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50% { transform: scale(1.6); opacity: 0.8; }
-}
-
-/* =======================================================
-   MAPLIBRE E PROTEÇÕES DESKTOP
-   ======================================================= */
-
-.maplibregl-map, .maplibregl-canvas { z-index: 1 !important; }
-.maplibregl-marker { z-index: 9999 !important; cursor: pointer; }
-
-@media (min-width: 769px) {
-  .map-sidebar {
-    height: calc(100vh - 48px) !important;
-    max-height: calc(100vh - 48px) !important;
-    transform: none !important;
-  }
-}
-
-.mobile-sheet-handle-area { display: none; }
-
-.stats-grid {
-  display: none;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 24px;
-}
-
-.stat-card {
-  padding: 16px 20px;
-  border-radius: 20px;
-  background: rgba(26, 26, 26, 0.45);
-  border: 1px solid rgba(197, 160, 89, 0.35);
+  width: 40px; 
+  height: 40px;
+  border-radius: 50%; /* Faz o container ser um círculo */
+  overflow: hidden;   /* Corta qualquer parte da imagem que sair do círculo */
+  background: transparent; /* Garante que não haja fundo preto */
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.stat-value { font-size: 22px; font-weight: 700; color: white; }
-.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #8a8a8a; }
-
-.filter-container { padding: 18px 20px 10px; }
-
-.filter-row::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
-
-/* =======================================================
-   ARQUITETURA DE CAMADAS (GLASS PANEL)
-   ======================================================= */
-
-.glass-panel {
-  background: rgba(10, 10, 10, 0.75);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+.marker-logo-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ajusta a imagem para preencher sem distorcer */
 }
 
-/* =======================================================
-   SCROLLBAR MODERNA
-   ======================================================= */
-
-.modern-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.modern-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.modern-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
-.modern-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 230, 53, 0.6);
-}
-
-/* =======================================================
-   RESPONSIVO (MOBILE)
-   ======================================================= */
-
+/* ==========================================================================
+   5. AJUSTES RESPONSIVOS (Mobile)
+   ========================================================================== */
 @media (max-width: 768px) {
   .map-sidebar {
     width: calc(100vw - 24px);
@@ -531,118 +130,52 @@ html, body {
     border-radius: 24px;
   }
 
-  .top-search-wrapper {
-    top: 20px;
+  .top-search-wrapper { 
+    top: 20px; 
     width: calc(100vw - 32px);
   }
 
   .stats-grid { display: none; }
-
-  .mobile-sheet-handle-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    padding: 16px 0 8px 0;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-sheet-handle {
-    width: 36px;
-    height: 5px;
-    background-color: rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    transition: background-color 0.2s ease;
-  }
-
-  .mobile-sheet-handle-area:active .mobile-sheet-handle {
-    background-color: rgba(255, 255, 255, 0.6);
-  }
-
-  .sidebar-header {
-    z-index: 10;
-    padding: 32px 24px 16px 24px;
-    background: transparent;
-    border-bottom: none;
-  }
-
-  .filter-container {
-    padding: 4px 20px 16px;
-  }
+}
+/* =======================================================
+   PAINEL PREMIUM (Glassmorphism & Background)
+   Aplicamos o estilo às duas classes para evitar conflitos
+   ======================================================= */
+.map-sidebar, .glass-panel {
+  /* Fundo com gradiente premium e opacidade controlada */
+  background: linear-gradient(180deg, rgba(12, 12, 12, 0.96), rgba(8, 8, 8, 0.92)) !important;
+  
+  /* Efeito de vidro fosco */
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  
+  /* Borda sutil */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  
+  /* Sombras e arredondamento */
+  border-radius: 32px;
+  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 /* =======================================================
-   VAUL DRAWER — MOBILE EXPLORATION
+   BARRA DE ROLAGEM (Scrollbar) - Estilo Premium
    ======================================================= */
-
-/* Remove o overlay escuro padrão do Vaul/shadcn quando modal=false */
-[vaul-overlay] {
-  display: none !important;
-}
-
-/* Garante que o DrawerContent do Vaul suba corretamente do bottom */
-[vaul-drawer] {
-  touch-action: none;
-}
-
-[vaul-drawer-direction="bottom"] {
-  bottom: 0 !important;
-  border-bottom: none !important;
-  border-bottom-left-radius: 0 !important;
-  border-bottom-right-radius: 0 !important;
-}
-
-/* Remove a borda inferior e o rounded-bottom que o shadcn adiciona por padrão */
-[data-vaul-drawer-direction="bottom"] > div:first-child {
-  border-bottom: none;
-}
-
-/* Handle visual do Vaul — escondemos o padrão e usamos o nosso */
-[vaul-drawer] [data-vaul-handle] {
-  display: none;
-}
-
-/* Garante que o Drawer fique acima do mapa */
-[vaul-drawer-wrapper] {
-  z-index: 50;
-}
-
-/* Scrollbar moderna para a lista dentro do drawer */
+/* Largura total da barra */
 .modern-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
+/* Fundo da trilha de rolagem (deixamos escuro para combinar com o layout) */
 .modern-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-.modern-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03); 
   border-radius: 10px;
 }
+/* O "pino" que o usuário arrasta (cor verde neon sutil) */
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(163, 230, 53, 0.4); 
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+/* Efeito ao passar o mouse ou segurar */
 .modern-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(163, 230, 53, 0.6);
-}
-
-/* No scrollbar horizontal para filtros */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
-/* Animação de entrada do painel expandido */
-@keyframes slideInFromTop {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-in.slide-in-from-top-2 {
-  animation: slideInFromTop 0.2s ease forwards;
+  background: var(--brand-color);
 }
