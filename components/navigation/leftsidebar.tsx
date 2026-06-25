@@ -28,6 +28,12 @@ export default function LeftSidebar({
   const [isOpen, setIsOpen] = useState(true);
   const dragControls = useDragControls();
 
+  const handleIrParaHome = () => {
+    // TODO: Definir e integrar a rota de retorno ao site Régua Máxima.
+    // Exemplo: router.push('/home') ou window.location.href = 'https://reguamaxima.com';
+    alert("Funcionalidade em aberto: Redirecionar para o site Régua Máxima.");
+  };
+
   return (
     <>
       {/* BOTÃO HAMBÚRGUER (Aparece quando a sidebar está fechada) */}
@@ -38,11 +44,28 @@ export default function LeftSidebar({
         onClick={() => setIsOpen(true)}
         className="absolute top-6 left-0 z-40 bg-[#121212]/80 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 hover:bg-white/10 hover:border-[#a3e635]/50 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer"
         style={{ pointerEvents: isOpen ? 'none' : 'auto' }}
+        title="Abrir Menu"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <line x1="3" y1="12" x2="21" y2="12"></line>
           <line x1="3" y1="6" x2="21" y2="6"></line>
           <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </motion.button>
+
+      {/* BOTÃO HOME FLUTUANTE (Aparece abaixo do hambúrguer quando a sidebar está fechada) */}
+      <motion.button
+        initial={{ opacity: 0, x: -50 }}
+        animate={{ opacity: isOpen ? 0 : 1, x: isOpen ? -50 : 24 }}
+        transition={{ duration: 0.3, delay: 0.05 }} // Efeito cascata suave após o hambúrguer
+        onClick={handleIrParaHome}
+        className="absolute top-[92px] left-0 z-40 bg-[#121212]/80 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 hover:bg-white/10 hover:border-[#a3e635]/50 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-pointer"
+        style={{ pointerEvents: isOpen ? 'none' : 'auto' }}
+        title="Voltar para a Home"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
       </motion.button>
 
@@ -70,16 +93,32 @@ export default function LeftSidebar({
             <p className="text-[10px] text-white/50 font-bold uppercase tracking-widest mt-1">Explorar Unidades</p>
           </div>
           
-          {/* NOVA SETA DE FECHAR */}
-          <button 
-            onPointerDown={(e) => e.stopPropagation()} // Impede que o clique na seta arraste o painel
-            onClick={() => setIsOpen(false)}
-            className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {/* BOTÃO HOME INTERNO (Para navegação com a sidebar aberta) */}
+            <button 
+              onPointerDown={(e) => e.stopPropagation()} 
+              onClick={handleIrParaHome}
+              className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Voltar para a Home"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+            </button>
+
+            {/* SETA DE FECHAR */}
+            <button 
+              onPointerDown={(e) => e.stopPropagation()} 
+              onClick={() => setIsOpen(false)}
+              className="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              title="Recolher Menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a3e635" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* BUSCA E FILTROS */}
@@ -105,7 +144,6 @@ export default function LeftSidebar({
                 </option>
               ))}
             </select>
-            {/* Ícone de Seta customizado por cima do Select */}
             <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9l6 6 6-6"/>
