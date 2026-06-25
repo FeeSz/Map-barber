@@ -2,7 +2,7 @@
 
 # 🗺️ BarberMap 3D
 
-### Interactive 3D Map Experience for Barber Shops
+### Mapa 3D interativo para Barbearias
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=nextdotjs)
 ![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)
