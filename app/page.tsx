@@ -3,18 +3,17 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import "maplibre-gl/dist/maplibre-gl.css";
-
 import { listaCompletaBarbearias, Barbearia } from "./utils/barbeariasData";
 import { useGeolocation } from './hooks/useGeolocation';
 import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
 import { fetchRoute } from './utils/fetchRoute';
 
+// Componentes
+import SearchBar from "@/components/navigation/searchbar";
+import Sidebar from "@/components/navigation/sidebar";
 import LeftSidebar from "@/components/navigation/leftsidebar";
 import RightSidebar from "@/components/navigation/rightsidebar";
-
-// Se o código acima der erro, tente este (depende de como seu tsconfig.json está configurado):
-// import LeftSidebar from "@/app/components/navigation/LeftSidebar";
-// import RightSidebar from "@/app/components/navigation/RightSidebar";
+import MobileExplorationDrawer from "@/components/navigation/mobileexplorationdrawer";
 
 interface MarkerProps { logoUrl: string; nome: string; isActive: boolean; }
 
@@ -49,10 +48,20 @@ export default function MapaPage() {
   const markersRef = useRef<any[]>([]);
   const animationRef = useRef<number | null>(null);
 
+  // -- FUNÇÕES DE SUPORTE --
+
+  const centralizarNoUsuario = () => {
+    const map = mapRef.current;
+    if (map && coords) {
+      map.flyTo({ center: coords, zoom: 16, pitch: 0, bearing: 0, speed: 1.5, essential: true });
+    }
+  };
+
   useEffect(() => {
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
   }, []);
 
+  // -- INICIALIZAÇÃO DO MAPA --
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     let mapaInstancia: any;
@@ -71,6 +80,7 @@ export default function MapaPage() {
         setMapaPronto(true);
         initRouteLayers(mapaInstancia);
         initUserLocationLayers(mapaInstancia);
+        mapaInstancia.resize(); // Força resize para evitar tela preta
       });
     });
 
@@ -80,6 +90,11 @@ export default function MapaPage() {
   }, []);
 
   useEffect(() => {
+    if (mapaPronto && mapRef.current) mapRef.current.resize();
+  }, [mapaPronto]);
+
+  // -- LÓGICA DE GEOLOCALIZAÇÃO --
+  useEffect(() => {
     const map = mapRef.current;
     if (map && coords && mapaPronto) {
       const source = map.getSource('user-location') as any;
@@ -87,6 +102,7 @@ export default function MapaPage() {
     }
   }, [coords, mapaPronto]);
 
+  // -- LÓGICA DE MARCADORES --
   useEffect(() => {
     const mapa = mapRef.current;
     if (!mapa || !mapaPronto || filiais.length === 0) return;
@@ -111,25 +127,19 @@ export default function MapaPage() {
       });
 
       setPortalElements(novosPortais);
-      // Espaço extra nas laterais para não esconder pins debaixo das sidebars
-      mapa.fitBounds(bounds, { padding: { top: 100, bottom: 100, left: 450, right: 100 }, maxZoom: 16, duration: 1500 });
+      mapa.fitBounds(bounds, { padding: { top: 100, bottom: 100, left: 100, right: 100 }, maxZoom: 16, duration: 1500 });
     });
     return () => { markersRef.current.forEach((m) => m.remove()); markersRef.current = []; setPortalElements([]); };
   }, [mapaPronto, filiais]);
 
+  // -- CÁLCULO DE ROTA --
   const handleSelecionarUnidade = async (barbearia: Barbearia) => {
     setFilialAtivaObj(barbearia);
     const map = mapRef.current;
     if (!map) return;
 
-    // EFEITO 3D CINEMATOGRÁFICO
     if (!coords) {
-      map.flyTo({ 
-        center: barbearia.coordenadas, zoom: 18, 
-        pitch: 65, // <--- Câmera inclinada estilo Drone
-        bearing: -30, speed: 1.2, essential: true,
-        padding: { right: 420 } // Desloca o centro do mapa para não ficar embaixo da RightSidebar
-      });
+      map.flyTo({ center: barbearia.coordenadas, zoom: 18, pitch: 65, bearing: -30, speed: 1.2, essential: true });
       return;
     }
 
@@ -147,7 +157,6 @@ export default function MapaPage() {
       import("maplibre-gl").then((maplibregl) => {
         const bounds = new maplibregl.default.LngLatBounds();
         data.feature.geometry.coordinates.forEach((coord: any) => bounds.extend(coord as [number, number]));
-        // Ajeita o enquadramento em 3D, respeitando o padding da RightSidebar
         map.fitBounds(bounds, { padding: { top: 100, bottom: 150, left: 450, right: 450 }, pitch: 55, maxZoom: 16, duration: 1200 });
       });
       
@@ -183,15 +192,36 @@ export default function MapaPage() {
     }
   };
 
+  // -- FILTRAGEM --
+  const mapaEstados: Record<string, string[]> = {
+    "SP": ["São Paulo", "Campinas", "Guarulhos", "Sorocaba", "Ribeirão Preto", "Santos", "São José", "Osasco", "Santo André", "São Bernardo", "Carandiru", "Jardins", "Bixiga", "Pinheiros", "Moema", "Tatuapé"],
+    "RJ": ["Rio de Janeiro", "Copacabana", "Niterói", "São Gonçalo", "Duque de Caxias", "Nova Iguaçu"],
+    "MG": ["Belo Horizonte", "Savassi", "Uberlândia", "Contagem", "Juiz de Fora"],
+    // ... complete os outros estados se necessário
+  };
+
+  const calcularDistanciaHaversine = (lon1: number, lat1: number, lon2: number, lat2: number) => {
+    const R = 6371; 
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
   const filiaisFiltradas = useMemo(() => {
-    return filiais
+    let filtradas = filiais
       .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
       .filter((f) => !filtroTag || f.tags.includes(filtroTag))
       .filter((f) => {
         if (filtroEstado === "Todos") return true;
-        return f.estado === filtroEstado || f.nome.includes(filtroEstado); 
+        if (f.estado === filtroEstado) return true;
+        const cidadesDoEstado = mapaEstados[filtroEstado] || [];
+        return cidadesDoEstado.some(cidade => f.nome.toLowerCase().includes(cidade.toLowerCase()));
       });
-  }, [filiais, busca, filtroTag, filtroEstado]);
+
+    return filtradas.map(f => ({ ...f, distanciaRealKm: coords ? calcularDistanciaHaversine(coords[0], coords[1], f.coordenadas[0], f.coordenadas[1]) : null }))
+      .sort((a, b) => (a.distanciaRealKm || 0) - (b.distanciaRealKm || 0));
+  }, [filiais, busca, filtroTag, filtroEstado, coords]);
 
   return (
     <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
@@ -204,22 +234,34 @@ export default function MapaPage() {
         )
       )}
 
-      {/* Layer 1: Exploração */}
-      <LeftSidebar 
-        filiaisFiltradas={filiaisFiltradas}
-        busca={busca} setBusca={setBusca}
-        filtroTag={filtroTag} setFiltroTag={setFiltroTag}
-        filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado}
-        handleSelecionarUnidade={handleSelecionarUnidade}
-        rotaAtivaId={rotaAtivaId}
-      />
+      {/* DESKTOP LAYOUT */}
+      <div className="hidden md:block">
+        <LeftSidebar 
+          filiaisFiltradas={filiaisFiltradas}
+          busca={busca} setBusca={setBusca}
+          filtroTag={filtroTag} setFiltroTag={setFiltroTag}
+          filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado}
+          handleSelecionarUnidade={handleSelecionarUnidade}
+          rotaAtivaId={rotaAtivaId}
+          onCentralizar={centralizarNoUsuario}
+        />
+        <RightSidebar 
+          barbearia={filialAtivaObj}
+          routeEtas={routeEtas}
+          limparRota={limparRota}
+        />
+      </div>
 
-      {/* Layer 2: Conversão */}
-      <RightSidebar 
-        barbearia={filialAtivaObj}
-        routeEtas={routeEtas}
-        limparRota={limparRota}
-      />
+      {/* MOBILE LAYOUT */}
+      <div className="md:hidden">
+        <MobileExplorationDrawer 
+          filiaisFiltradas={filiaisFiltradas}
+          filtroTag={filtroTag}
+          setFiltroTag={setFiltroTag}
+          handleSelecionarUnidade={handleSelecionarUnidade}
+          rotaAtivaId={rotaAtivaId}
+        />
+      </div>
     </main>
   );
 }

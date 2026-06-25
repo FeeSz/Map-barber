@@ -68,7 +68,7 @@ export default function LeftSidebar({
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
         </svg>
       </motion.button>
-
+        
       {/* PAINEL ARRASTÁVEL */}
       <motion.aside
         drag="x"

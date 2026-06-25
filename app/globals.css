@@ -571,3 +571,78 @@ html, body {
     padding: 4px 20px 16px;
   }
 }
+
+/* =======================================================
+   VAUL DRAWER — MOBILE EXPLORATION
+   ======================================================= */
+
+/* Remove o overlay escuro padrão do Vaul/shadcn quando modal=false */
+[vaul-overlay] {
+  display: none !important;
+}
+
+/* Garante que o DrawerContent do Vaul suba corretamente do bottom */
+[vaul-drawer] {
+  touch-action: none;
+}
+
+[vaul-drawer-direction="bottom"] {
+  bottom: 0 !important;
+  border-bottom: none !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+
+/* Remove a borda inferior e o rounded-bottom que o shadcn adiciona por padrão */
+[data-vaul-drawer-direction="bottom"] > div:first-child {
+  border-bottom: none;
+}
+
+/* Handle visual do Vaul — escondemos o padrão e usamos o nosso */
+[vaul-drawer] [data-vaul-handle] {
+  display: none;
+}
+
+/* Garante que o Drawer fique acima do mapa */
+[vaul-drawer-wrapper] {
+  z-index: 50;
+}
+
+/* Scrollbar moderna para a lista dentro do drawer */
+.modern-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.modern-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 230, 53, 0.6);
+}
+
+/* No scrollbar horizontal para filtros */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* Animação de entrada do painel expandido */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in.slide-in-from-top-2 {
+  animation: slideInFromTop 0.2s ease forwards;
+}
