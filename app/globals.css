@@ -29,15 +29,15 @@ html, body {
 
 .map-sidebar {
   position: absolute;
-  top: 24px;
-  left: 24px;
-  width: 430px;
-  z-index: 99999;
-  
   display: flex;
+  top: 20px;
+  left: 10px;
+  width: 480px;
+  margin-top: 30px;
+  margin-bottom: -70px;
+  z-index: 99999; 
   flex-direction: column;
   overflow: hidden;
-  
   backdrop-filter: var(--apple-blur);
   -webkit-backdrop-filter: var(--apple-blur);
   background: linear-gradient(180deg, rgba(12, 12, 12, 0.96), rgba(8, 8, 8, 0.92));
@@ -62,10 +62,12 @@ html, body {
 .sidebar-header {
   z-index: 10;
   padding: 28px 28px 20px;
+  background: transparent;
   backdrop-filter: blur(30px);
-  background: linear-gradient(180deg, rgba(10, 10, 10, 0.96), rgba(10, 10, 10, 0.75));
+  -webkit-backdrop-filter: blur(30px); 
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
 
 .map-title {
   margin: 0;
@@ -436,4 +438,32 @@ html, body {
   .filter-container {
     padding: 4px 20px 16px;
   }
+}
+/* =======================================================
+   ARQUITETURA DE CAMADAS (Z-INDEX ESPACIAL & GLASS)
+   ======================================================= */
+.glass-panel {
+  background: rgba(10, 10, 10, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+
+/* =======================================================
+   SCROLLYTELLING (SCROLLBAR MODERNA)
+   ======================================================= */
+.modern-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.modern-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+.modern-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 230, 53, 0.6); /* Brand Color */
 }
