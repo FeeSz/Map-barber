@@ -1,323 +1,544 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-// Importações de utilitários e lógica de negócio
+// Utilitários e Dados
 import { listaCompletaBarbearias, Barbearia } from "./utils/barbeariasData";
-import { useGeolocation } from './hooks/useGeolocation';
-import { initRouteLayers, initUserLocationLayers } from './utils/mapLayers';
-import { fetchRoute } from './utils/fetchRoute';
+import { useGeolocation } from "./hooks/useGeolocation";
+import { initRouteLayers, initUserLocationLayers } from "./utils/mapLayers";
+import { fetchRoute } from "./utils/fetchRoute";
 
-// Importações dos componentes estruturais de navegação
-import LeftSidebar from "@/components/navigation/leftsidebar";
+// Componentes UI
 import RightSidebar from "@/components/navigation/rightsidebar";
 import MobileExplorationDrawer from "@/components/navigation/mobileexplorationdrawer";
 
-// Interface estrita para as propriedades do marcador visual no mapa
-interface MarkerProps { 
-  logoUrl: string; 
-  nome: string; 
-  isActive: boolean; 
-  algumAtivo: boolean; // Indica se o usuário possui alguma barbearia focada no momento
+// ─── Haversine fora do componente: função pura, zero re-criação ──────────────
+function calcularDistanciaHaversine(
+  lon1: number,
+  lat1: number,
+  lon2: number,
+  lat2: number
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Componente BarberMarker
- * Constrói um pin de geolocalização vetorial idêntico ao modelo clássico de GPS.
- * A imagem da barbearia fica perfeitamente circular embutida na cabeça do marcador.
- */
-function BarberMarker({ logoUrl, nome, isActive, algumAtivo }: MarkerProps) {
-  // Controle estrito de estados visuais baseados na seleção do utilizador:
-  // 1. Ativo -> Borda verde neon acesa da Régua Máxima
-  // 2. Outro ativo (Inativo) -> Filtro preto e branco (grayscale) e opacidade reduzida
-  // 3. Nenhum ativo -> Cores originais e normais da logo
-  const estiloFiltro = isActive 
-    ? "border-[#a3e635] text-[#a3e635]" 
-    : algumAtivo 
-      ? "grayscale opacity-40 scale-90 text-neutral-800" 
-      : "text-neutral-900 hover:scale-105";
+// ─── Tipos ───────────────────────────────────────────────────────────────────
+interface MarkerProps {
+  logoUrl: string;
+  nome: string;
+  isActive: boolean;
+  algumAtivo: boolean;
+}
+
+// ─── BarberMarker — memorizado, sem dependências externas ────────────────────
+const BarberMarker = React.memo(function BarberMarker({
+  logoUrl,
+  nome,
+  isActive,
+  algumAtivo,
+}: MarkerProps) {
+  const estiloFiltro = isActive
+    ? "border-[#a3e635] text-[#a3e635] z-50 scale-110"
+    : algumAtivo
+    ? "grayscale opacity-40 scale-90 text-neutral-800 z-10"
+    : "text-neutral-900 hover:scale-105 z-20";
 
   return (
-    <div className={`relative flex flex-col items-center group transition-all duration-300 ${isActive ? "z-50 scale-110" : "z-10"}`}>
-      
-      {/* Efeito de Ondas/Pulso Verde Neon (Apenas quando o ponteiro está selecionado) */}
+    <div
+      className={`relative flex flex-col items-center group transition-all duration-300 ${estiloFiltro}`}
+    >
       {isActive && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-10 bg-[#a3e635]/30 rounded-full blur-sm animate-ping pointer-events-none" />
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-8 bg-[#a3e635]/40 rounded-full blur-sm animate-ping pointer-events-none" />
       )}
-
-      {/* Estrutura do Ponteiro de Localização em Gota utilizando SVG Puro */}
-      <div className={`relative w-12 h-14 flex items-center justify-center transition-all duration-300 ${estiloFiltro}`}>
-        <svg viewBox="0 0 24 30" fill="currentColor" className="absolute inset-0 w-full h-full drop-shadow-[0_6px_12px_rgba(0,0,0,0.5)]">
+      <div className="relative w-9 h-11 flex items-center justify-center transition-all duration-300 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)]">
+        <svg
+          viewBox="0 0 24 30"
+          fill="currentColor"
+          className="absolute inset-0 w-full h-full"
+        >
           <path d="M12 0C5.37 0 0 5.37 0 12c0 9 12 18 12 18s12-9 12-18c0-6.63-5.37-12-12-12z" />
         </svg>
-
-        {/* Imagem circular da barbearia encaixada perfeitamente no olho do ponteiro */}
-        <div className="absolute top-[6px] w-8 h-8 rounded-full overflow-hidden bg-transparent border-0 z-10">
-          <img 
-            src={logoUrl} 
-            alt={nome} 
-            className="w-full h-full object-cover rounded-full select-none pointer-events-none" 
+        <div className="absolute top-[4.5px] w-6 h-6 rounded-full overflow-hidden bg-[#0c0c0c] border-0 z-10">
+          <img
+            src={logoUrl}
+            alt={nome}
+            className="w-full h-full object-cover rounded-full select-none pointer-events-none"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       </div>
     </div>
   );
+});
+
+// ─── Tipo do portal ───────────────────────────────────────────────────────────
+interface PortalEntry {
+  id: string;
+  element: HTMLElement;
+  barbearia: Barbearia;
 }
 
-/**
- * Componente Principal: MapaPage
- * Responsável por gerenciar os estados globais da aplicação, filtros geográficos e renderização do canvas.
- */
+// ─── Componente principal ────────────────────────────────────────────────────
 export default function MapaPage() {
+  const router = useRouter();
   const { coords } = useGeolocation();
-  
-  // Estados de controle das rotas e inicialização
+
+  // Estado mínimo no React — apenas o que dispara re-render necessário
   const [rotaAtivaId, setRotaAtivaId] = useState<string | null>(null);
-  const [routeEtas, setRouteEtas] = useState<{ car: number, walk: number, transit: number } | null>(null);
+  const [routeEtas, setRouteEtas] = useState<{
+    car: number;
+    walk: number;
+    transit: number;
+  } | null>(null);
   const [mapaPronto, setMapaPronto] = useState(false);
-  
-  // Estados de dados e barramento de filtros
-  const [filiais] = useState<Barbearia[]>(listaCompletaBarbearias);
   const [filialAtivaObj, setFilialAtivaObj] = useState<Barbearia | null>(null);
   const [busca, setBusca] = useState("");
   const [filtroTag, setFiltroTag] = useState<string | null>(null);
-  const [filtroEstado, setFiltroEstado] = useState("Todos");
-  
-  // Lista de portais para injetar os marcadores React dentro da árvore DOM controlada pelo MapLibre
-  const [portalElements, setPortalElements] = useState<Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }>>([]);
+  const [portalElements, setPortalElements] = useState<PortalEntry[]>([]);
 
+  // Refs — não disparam re-render
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const animationRef = useRef<number | null>(null);
+  const coordsRef = useRef(coords); // espelho de coords para callbacks estáveis
 
-  // Limpa ciclos de animação pendentes na memória ao desmontar a página
+  // Mantém coordsRef sincronizado sem re-criar callbacks
   useEffect(() => {
-    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
+    coordsRef.current = coords;
+  }, [coords]);
+
+  // ─── Dados estáticos — sem estado, sem re-render ──────────────────────────
+  const filiais = useMemo(() => listaCompletaBarbearias, []);
+
+  // ─── Cleanup do animation frame ──────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
   }, []);
 
-  // Inicializa o mapa com o estilo Fiord (OpenFreeMap) focado na região do Brasil
+  // ─── Inicialização do mapa (executado uma única vez) ──────────────────────
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
+
     let mapaInstancia: any;
 
     import("maplibre-gl").then((maplibregl) => {
       if (!mapContainerRef.current) return;
+
+      const limitesAmericaDoSul: [[number, number], [number, number]] = [
+        [-95.0, -60.0],
+        [-25.0, 15.0],
+      ];
+
       mapaInstancia = new maplibregl.default.Map({
         container: mapContainerRef.current,
         style: "https://tiles.openfreemap.org/styles/fiord",
-        center: [-53.2000, -10.3000], 
-        zoom: 4, pitch: 0, bearing: 0, minZoom: 3, maxZoom: 19, attributionControl: false,
+        center: [-53.2, -10.3],
+        zoom: 4,
+        pitch: 0,
+        bearing: 0,
+        minZoom: 3,
+        maxZoom: 19,
+        attributionControl: false,
+        maxBounds: limitesAmericaDoSul,
+        preserveDrawingBuffer: false,
+        // Performance: limita FPS em telas de alta densidade
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        fadeDuration: 200,
       });
 
       mapRef.current = mapaInstancia;
-      
+
       mapaInstancia.on("load", () => {
         setMapaPronto(true);
         initRouteLayers(mapaInstancia);
         initUserLocationLayers(mapaInstancia);
-        mapaInstancia.resize(); // Evita o bug de tela preta recalculando a dimensão do canvas
+        mapaInstancia.resize();
       });
     });
 
     return () => {
-      if (mapaInstancia) { mapaInstancia.remove(); mapRef.current = null; }
+      if (mapaInstancia) {
+        mapaInstancia.remove();
+        mapRef.current = null;
+      }
     };
-  }, []);
+  }, []); // deps vazias — roda só uma vez
 
-  // Força o redimensionamento síncrono assim que o mapa sinaliza que carregou
+  // ─── Resize quando o mapa estiver pronto ─────────────────────────────────
   useEffect(() => {
     if (mapaPronto && mapRef.current) mapRef.current.resize();
   }, [mapaPronto]);
 
-  // Alimenta em tempo real a camada gráfica contendo a bolinha do GPS do usuário
+  // ─── Atualização da camada de localização do usuário ─────────────────────
   useEffect(() => {
     const map = mapRef.current;
-    if (map && coords && mapaPronto) {
-      const source = map.getSource('user-location') as any;
-      if (source) source.setData({ type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: coords }, properties: {} }] });
+    if (!map || !coords || !mapaPronto) return;
+
+    const source = map.getSource("user-location") as any;
+    if (source) {
+      source.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: { type: "Point", coordinates: coords },
+            properties: {},
+          },
+        ],
+      });
     }
   }, [coords, mapaPronto]);
 
-  // Ciclo de vida que gera os elementos DOM vazios no mapa para anexar os BarberMarkers customizados
-  useEffect(() => {
-    const mapa = mapRef.current;
-    if (!mapa || !mapaPronto || filiais.length === 0) return;
+  // ─── Handlers estáveis com useCallback ───────────────────────────────────
 
-    import("maplibre-gl").then((maplibregl) => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      const novosPortais: Array<{ id: string; element: HTMLElement; barbearia: Barbearia; }> = [];
-      const bounds = new maplibregl.default.LngLatBounds();
-
-      filiais.forEach((barbearia) => {
-        bounds.extend(barbearia.coordenadas);
-        const wrapper = document.createElement("div");
-        wrapper.className = "map-marker-wrapper";
-        wrapper.addEventListener("click", () => handleSelecionarUnidade(barbearia));
-
-        const marker = new maplibregl.default.Marker({ element: wrapper, anchor: "bottom" })
-          .setLngLat(barbearia.coordenadas).addTo(mapa);
-        
-        markersRef.current.push(marker);
-        novosPortais.push({ id: barbearia.id, element: wrapper, barbearia });
-      });
-
-      setPortalElements(novosPortais);
-      mapa.fitBounds(bounds, { padding: { top: 100, bottom: 100, left: 100, right: 100 }, maxZoom: 16, duration: 1500 });
-    });
-    return () => { markersRef.current.forEach((m) => m.remove()); markersRef.current = []; setPortalElements([]); };
-  }, [mapaPronto, filiais]);
-
-  // Função utilitária acionada pelo botão da barra lateral para recentralizar a visão no GPS do cliente
-  const centralizarNoUsuario = () => {
-    const map = mapRef.current;
-    if (map && coords) {
-      map.flyTo({ center: coords, zoom: 16, pitch: 0, bearing: 0, speed: 1.5, essential: true });
-    }
-  };
-
-  // Traça a rota da OSRM API e executa movimentos cinematográficos orbitais (pitch/bearing)
-  const handleSelecionarUnidade = async (barbearia: Barbearia) => {
-    setFilialAtivaObj(barbearia);
-    const map = mapRef.current;
-    if (!map) return;
-
-    if (!coords) {
-      map.flyTo({ center: barbearia.coordenadas, zoom: 18, pitch: 65, bearing: -30, speed: 1.2, essential: true });
-      return;
-    }
-
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    setRouteEtas(null);
-    setRotaAtivaId(barbearia.id);
-
-    const routeSource = map.getSource('route') as any;
-    if (routeSource) routeSource.setData({ type: 'FeatureCollection', features: [] });
-
-    const data = await fetchRoute(coords, barbearia.coordenadas);
-    
-    if (data && routeSource) {
-      setRouteEtas(data.durations);
-      import("maplibre-gl").then((maplibregl) => {
-        const bounds = new maplibregl.default.LngLatBounds();
-        data.feature.geometry.coordinates.forEach((coord: any) => bounds.extend(coord as [number, number]));
-        map.fitBounds(bounds, { padding: { top: 100, bottom: 150, left: 450, right: 450 }, pitch: 55, maxZoom: 16, duration: 1200 });
-      });
-      
-      const fullCoordinates = data.feature.geometry.coordinates;
-      let currentFrame = 0;
-      const totalFrames = 30; 
-      const pointsPerFrame = Math.max(1, Math.ceil(fullCoordinates.length / totalFrames));
-
-      // Efeito incremental frame-a-frame de desenho da linha da rota (performance visual estável)
-      const animateRoute = () => {
-        currentFrame++;
-        const currentPoints = currentFrame * pointsPerFrame;
-        routeSource.setData({
-          type: 'FeatureCollection',
-          features: [{ type: 'Feature', geometry: { type: 'LineString', coordinates: fullCoordinates.slice(0, currentPoints) }, properties: {} }]
-        });
-        if (currentPoints < fullCoordinates.length) animationRef.current = requestAnimationFrame(animateRoute);
-      };
-      animationRef.current = requestAnimationFrame(animateRoute);
-    }
-  };
-
-  // Limpa estados de rota ativos e restaura a visualização flat bidimensional no mapa
-  const limparRota = () => {
+  const limparRota = useCallback(() => {
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     setRouteEtas(null);
     setRotaAtivaId(null);
     setFilialAtivaObj(null);
-    
+
     const map = mapRef.current;
-    if (map) {
-      const source = map.getSource('route') as any;
-      if (source) source.setData({ type: 'FeatureCollection', features: [] });
-      map.flyTo({ pitch: 0, bearing: 0, speed: 1.2, padding: { right: 0 } });
-    }
-  };
+    if (!map) return;
 
-  // Mapeamento local para tratamento tolerante a falhas do select de estados
-  const mapaEstados: Record<string, string[]> = {
-    "SP": ["São Paulo", "Campinas", "Guarulhos", "Sorocaba", "Ribeirão Preto", "Santos", "São José", "Osasco", "Santo André", "São Bernardo", "Carandiru", "Jardins", "Bixiga", "Pinheiros", "Moema", "Tatuapé"],
-    "RJ": ["Rio de Janeiro", "Copacabana", "Niterói", "São Gonçalo", "Duque de Caxias", "Nova Iguaçu"],
-    "MG": ["Belo Horizonte", "Savassi", "Uberlândia", "Contagem", "Juiz de Fora"],
-  };
+    const source = map.getSource("route") as any;
+    if (source) source.setData({ type: "FeatureCollection", features: [] });
 
-  // Algoritmo matemático para cálculo de distância linear real em KM (Haversine)
-  const calcularDistanciaHaversine = (lon1: number, lat1: number, lon2: number, lat2: number) => {
-    const R = 6371; 
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
+    map.flyTo({ pitch: 0, bearing: 0, speed: 1.5, padding: { bottom: 0 } });
+  }, []);
 
-  // Filtra e ordena a coleção baseado nas ações do usuário e distância do GPS
-  const filiaisFiltradas = useMemo(() => {
-    let filtradas = filiais
-      .filter((f) => f.nome.toLowerCase().includes(busca.toLowerCase()))
-      .filter((f) => !filtroTag || f.tags.includes(filtroTag))
-      .filter((f) => {
-        if (filtroEstado === "Todos") return true;
-        if (f.estado === filtroEstado) return true;
-        const cidadesDoEstado = mapaEstados[filtroEstado] || [];
-        return cidadesDoEstado.some(cidade => f.nome.toLowerCase().includes(cidade.toLowerCase()));
+  const handleSelecionarUnidade = useCallback(
+    async (barbearia: Barbearia) => {
+      setFilialAtivaObj(barbearia);
+
+      const map = mapRef.current;
+      if (!map) return;
+
+      const currentCoords = coordsRef.current;
+
+      if (!currentCoords) {
+        map.flyTo({
+          center: barbearia.coordenadas,
+          zoom: 17,
+          pitch: 45,
+          bearing: -20,
+          speed: 1.5,
+          essential: true,
+          padding: { bottom: 250 },
+        });
+        return;
+      }
+
+      // Cancela animação anterior imediatamente
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+        animationRef.current = null;
+      }
+
+      setRouteEtas(null);
+      setRotaAtivaId(barbearia.id);
+
+      // Garante que a source de rota existe
+      let routeSource = map.getSource("route") as any;
+      if (!routeSource) {
+        map.addSource("route", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features: [] },
+        });
+        map.addLayer({
+          id: "route-layer",
+          type: "line",
+          source: "route",
+          layout: { "line-join": "round", "line-cap": "round" },
+          paint: {
+            "line-color": "#a3e635",
+            "line-width": 5,
+            "line-opacity": 0.8,
+          },
+        });
+        routeSource = map.getSource("route");
+      }
+
+      // Limpa rota anterior antes de aguardar a nova
+      routeSource.setData({ type: "FeatureCollection", features: [] });
+
+      const data = await fetchRoute(currentCoords, barbearia.coordenadas);
+      if (!data || !routeSource) return;
+
+      setRouteEtas(data.durations);
+
+      import("maplibre-gl").then((maplibregl) => {
+        const bounds = new maplibregl.default.LngLatBounds();
+        data.feature.geometry.coordinates.forEach((coord: any) =>
+          bounds.extend(coord as [number, number])
+        );
+        map.fitBounds(bounds, {
+          padding: { top: 80, bottom: 350, left: 50, right: 50 },
+          pitch: 50,
+          maxZoom: 15,
+          duration: 1200,
+        });
       });
 
-    return filtradas.map(f => ({ ...f, distanciaRealKm: coords ? calcularDistanciaHaversine(coords[0], coords[1], f.coordenadas[0], f.coordenadas[1]) : null }))
-      .sort((a, b) => (a.distanciaRealKm || 0) - (b.distanciaRealKm || 0));
-  }, [filiais, busca, filtroTag, filtroEstado, coords]);
+      // Animação da rota
+      const fullCoords: [number, number][] = data.feature.geometry.coordinates;
+      const totalFrames = 25;
+      const pointsPerFrame = Math.max(
+        1,
+        Math.ceil(fullCoords.length / totalFrames)
+      );
+      let currentFrame = 0;
 
+      const animateRoute = () => {
+        currentFrame++;
+        const slice = currentFrame * pointsPerFrame;
+        routeSource.setData({
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "LineString",
+                coordinates: fullCoords.slice(0, slice),
+              },
+              properties: {},
+            },
+          ],
+        });
+        if (slice < fullCoords.length) {
+          animationRef.current = requestAnimationFrame(animateRoute);
+        } else {
+          animationRef.current = null;
+        }
+      };
+
+      animationRef.current = requestAnimationFrame(animateRoute);
+    },
+    [] // coordsRef.current lido no momento da chamada — sem deps necessárias
+  );
+
+  // ─── Criação dos markers (só quando o mapa estiver pronto) ───────────────
+  useEffect(() => {
+    const mapa = mapRef.current;
+    if (!mapa || !mapaPronto || filiais.length === 0) return;
+
+    let mounted = true;
+
+    import("maplibre-gl").then((maplibregl) => {
+      if (!mounted) return;
+
+      // Remove markers antigos
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+
+      const novosPortais: PortalEntry[] = [];
+      const bounds = new maplibregl.default.LngLatBounds();
+
+      filiais.forEach((barbearia) => {
+        bounds.extend(barbearia.coordenadas);
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "map-marker-wrapper relative";
+        wrapper.addEventListener("click", () =>
+          handleSelecionarUnidade(barbearia)
+        );
+
+        const marker = new maplibregl.default.Marker({
+          element: wrapper,
+          anchor: "bottom",
+        })
+          .setLngLat(barbearia.coordenadas)
+          .addTo(mapa);
+
+        markersRef.current.push(marker);
+        novosPortais.push({ id: barbearia.id, element: wrapper, barbearia });
+      });
+
+      if (mounted) {
+        setPortalElements(novosPortais);
+        mapa.fitBounds(bounds, {
+          padding: 80,
+          maxZoom: 16,
+          duration: 1500,
+        });
+      }
+    });
+
+    return () => {
+      mounted = false;
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      setPortalElements([]);
+    };
+  }, [mapaPronto, filiais, handleSelecionarUnidade]);
+
+  // ─── GPS / centralizar no usuário ────────────────────────────────────────
+  const centralizarNoUsuario = useCallback(() => {
+    const map = mapRef.current;
+    const currentCoords = coordsRef.current;
+
+    if (map && currentCoords) {
+      map.flyTo({
+        center: currentCoords,
+        zoom: 16,
+        pitch: 0,
+        bearing: 0,
+        speed: 1.5,
+        essential: true,
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (map) {
+          map.flyTo({
+            center: [pos.coords.longitude, pos.coords.latitude],
+            zoom: 16,
+            speed: 1.5,
+          });
+        }
+      },
+      (err) => {
+        console.warn("GPS bloqueado:", err);
+        alert(
+          "Permissão de localização bloqueada. Ative nas configurações do navegador."
+        );
+      },
+      { enableHighAccuracy: true }
+    );
+  }, []);
+
+  // ─── Lista filtrada — memoizada ───────────────────────────────────────────
+  const filiaisFiltradas = useMemo(() => {
+    const buscaLower = busca.toLowerCase();
+
+    return filiais
+      .filter(
+        (f) =>
+          f.nome.toLowerCase().includes(buscaLower) &&
+          (!filtroTag || f.tags.includes(filtroTag))
+      )
+      .map((f) => ({
+        ...f,
+        distanciaRealKm: coords
+          ? calcularDistanciaHaversine(
+              coords[0],
+              coords[1],
+              f.coordenadas[0],
+              f.coordenadas[1]
+            )
+          : null,
+      }))
+      .sort((a, b) => (a.distanciaRealKm ?? 0) - (b.distanciaRealKm ?? 0));
+  }, [filiais, busca, filtroTag, coords]);
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <main className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]">
-      {/* Camada Zero: O Container do mapa */}
-      <div ref={mapContainerRef} className="absolute inset-0 w-full h-full z-0" />
+    // ⚡ vaul-drawer-wrapper via spread — única forma válida de atributos com hífen em JSX
+    <main
+      {...{ "vaul-drawer-wrapper": "" }}
+      className="relative w-screen h-screen overflow-hidden select-none bg-[#030303]"
+    >
+      {/* Mapa */}
+      <div
+        ref={mapContainerRef}
+        className="absolute inset-0 w-full h-full z-0"
+      />
 
-      {/* Portais isolados para injeção síncrona dos pins customizados com detecção global de foco */}
+      {/* FAB: Voltar (Superior Esquerdo) */}
+      <button
+        onClick={() => router.back()}
+        className="absolute top-6 left-4 z-40 bg-[#0c0c0c]/70 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black transition-all active:scale-95"
+        aria-label="Voltar para a plataforma"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </button>
+
+      {/* FAB: GPS (Superior Direito) */}
+      <button
+        onClick={centralizarNoUsuario}
+        className="absolute top-6 right-4 z-40 bg-[#0c0c0c]/70 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black hover:text-[#a3e635] transition-all active:scale-95"
+        aria-label="Encontrar minha localização"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polygon points="3 11 22 2 13 21 11 13 3 11" />
+        </svg>
+      </button>
+
+      {/* Portais dos markers */}
       {portalElements.map(({ id, element, barbearia }) =>
         createPortal(
-          <BarberMarker 
-            key={id} 
-            logoUrl={barbearia.logoUrl} 
-            nome={barbearia.nome} 
-            isActive={filialAtivaObj?.id === id} 
-            algumAtivo={filialAtivaObj !== null} 
+          <BarberMarker
+            key={id}
+            logoUrl={barbearia.logoUrl}
+            nome={barbearia.nome}
+            isActive={filialAtivaObj?.id === id}
+            algumAtivo={filialAtivaObj !== null}
           />,
           element
         )
       )}
 
-      {/* VIEWPORT INTERFACE: DESKTOP ECOSYSTEM */}
-      <div className="hidden md:block">
-        <LeftSidebar 
-          filiaisFiltradas={filiaisFiltradas}
-          busca={busca} setBusca={setBusca}
-          filtroTag={filtroTag} setFiltroTag={setFiltroTag}
-          filtroEstado={filtroEstado} setFiltroEstado={setFiltroEstado}
-          handleSelecionarUnidade={handleSelecionarUnidade}
-          rotaAtivaId={rotaAtivaId}
-          onCentralizar={centralizarNoUsuario}
-        />
-        <RightSidebar 
+      {/* Drawer mobile */}
+      <MobileExplorationDrawer
+        filiaisFiltradas={filiaisFiltradas}
+        filtroTag={filtroTag}
+        setFiltroTag={setFiltroTag}
+        handleSelecionarUnidade={handleSelecionarUnidade}
+        rotaAtivaId={rotaAtivaId}
+      />
+
+      {/* Sidebar desktop */}
+      <div className="hidden lg:block">
+        <RightSidebar
           barbearia={filialAtivaObj}
           routeEtas={routeEtas}
           limparRota={limparRota}
-        />
-      </div>
-
-      {/* VIEWPORT INTERFACE: MOBILE ECOSYSTEM (Drawer da Visão Figma) */}
-      <div className="md:hidden">
-        <MobileExplorationDrawer 
-          filiaisFiltradas={filiaisFiltradas}
-          filtroTag={filtroTag}
-          setFiltroTag={setFiltroTag}
-          handleSelecionarUnidade={handleSelecionarUnidade}
-          rotaAtivaId={rotaAtivaId}
         />
       </div>
     </main>

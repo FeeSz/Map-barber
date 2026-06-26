@@ -82,7 +82,7 @@ export default function LeftSidebar({
         animate={{ x: isOpen ? 0 : -420 }}
         transition={{ type: "spring", stiffness: 260, damping: 25 }}
         className="absolute top-0 left-0 w-full md:w-[400px] h-screen glass-panel z-50 flex flex-col"
-      >
+>
         {/* HEADER */}
         <div 
           className="pt-8 px-6 pb-6 cursor-grab active:cursor-grabbing flex items-center justify-between shrink-0"
