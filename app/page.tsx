@@ -472,7 +472,7 @@ export default function MapaPage() {
      <Button 
   variant="ghost" 
   onClick={() => router.back()}
-  className="absolute w-12 h-12 top-6 left-4 z-50 bg-transparent backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white  hover:border-black transition-all active:scale-95 flex items-center justify-center"
+  className="absolute w-12 h-12 // top-6 // left-4 // z-50 // bg-transparent // backdrop-blur-xl // p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white  hover:border-black transition-all active:scale-95 flex items-center justify-center"
   aria-label="Voltar para a plataforma"
 >
   <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
@@ -482,10 +482,10 @@ export default function MapaPage() {
       <Button
       variant="ghost"
         onClick={centralizarNoUsuario}
-        className="absolute top-6 // bg-transparent // w-12 h-12 // right-4 z-40 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black hover:text-[#a3e635] transition-all active:scale-95 flex items-center justify-center"
+        className="absolute w-12 h-12 // top-7 // right-4 // z-50 // bg-transparent // backdrop-blur-xl // p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white  hover:border-black transition-all active:scale-95 flex items-center justify-center"
         aria-label="Encontrar minha localização"
       >
-        <Navigation className="w-5 h-5 fill-current" strokeWidth={2} />
+        <Navigation className="w-5 h-5 fill-current" strokeWidth={2.5} />
       </Button>
 
       {/* Portais dos markers */}
