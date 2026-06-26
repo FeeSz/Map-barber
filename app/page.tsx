@@ -512,13 +512,11 @@ export default function MapaPage() {
         rotaAtivaId={rotaAtivaId}
       />
       {/* NOVO: Drawer Liquid Glass de Detalhes para Mobile */}
-      <div className="md:hidden">
-        <MobileDetailsDrawer
-          barbearia={filialAtivaObj}
-          routeEtas={routeEtas}
-          onClose={limparRota}
-        />
-      </div>  
+<MobileDetailsDrawer
+  barbearia={filialAtivaObj}
+  routeEtas={routeEtas}
+  onClose={limparRota}
+/>  
     </main>
   );
 }

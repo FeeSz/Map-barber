@@ -1,4 +1,6 @@
-// MobileDetailsDrawer.tsx — correções de layout desktop + card de transporte
+// MobileDetailsDrawer.tsx
+
+"use client";
 
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
@@ -8,6 +10,25 @@ import { Barbearia } from "@/utils/barbeariasData";
 interface MobileDetailsDrawerProps {
   barbearia: Barbearia | null;
   routeEtas: { car: number; walk: number; transit: number } | null;
+  onClose: () => void;
+}
+
+// ✅ Formata minutos → "X min" ou "Xh Ymin" se > 59
+function formatDuration(seconds: number): string {
+  const totalMin = Math.round(seconds / 60);
+  if (totalMin < 60) return `${totalMin} min`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}min`;
+}
+// Renomear para deixar explícito no contrato da interface
+interface MobileDetailsDrawerProps {
+  barbearia: Barbearia | null;
+  routeEtas: {
+    car: number;     // segundos (OSRM)
+    walk: number;    // segundos (distKm / 5km/h * 3600)
+    transit: number; // segundos (distKm / 20km/h * 3600 + 600)
+  } | null;
   onClose: () => void;
 }
 
@@ -32,11 +53,6 @@ export function MobileDetailsDrawer({
       modal={false}
     >
       <DrawerPrimitive.Portal>
-        {/* 
-          ✅ FIX DESKTOP: wrapper centrado com max-width e padding lateral.
-          No mobile (< md) ocupa full width. No desktop fica centralizado
-          com largura máxima de 480px e um gap do bottom para não colar no rodapé.
-        */}
         <div className="
           fixed bottom-0 left-0 right-0 z-[70]
           flex justify-center items-end
@@ -49,22 +65,22 @@ export function MobileDetailsDrawer({
               w-full max-w-[480px]
               flex flex-col outline-none
               pointer-events-auto
-              bg-black/35 backdrop-blur-[50px] saturate-[2]
+              bg-black/75 saturate-[2]
               border border-white/20 rounded-[42px]
               shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),_0_-20px_50px_rgba(0,0,0,0.6)]
               transition-all duration-300 ease-out
               max-h-[85vh]
             "
           >
-            {/* Handle — só faz sentido no mobile onde tem snap */}
-            <div className="mx-auto mt-4 mb-2 h-1.5 w-14 rounded-full bg-white/30 backdrop-blur-md shadow-inner shrink-0 md:hidden" />
+            {/* ✅ Handle sempre visível — mobile e desktop */}
+            <div className="mx-auto mt-4 mb-2 h-1.5 w-14 rounded-full bg-white/30 backdrop-blur-md shadow-inner shrink-0" />
 
-            <div className="flex-1 overflow-y-auto modern-scrollbar px-6 pb-8 pt-5">
+            <div className="flex-1 overflow-y-auto modern-scrollbar px-6 pb-8 pt-3">
 
               {/* Header */}
               <div className="flex items-start justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-2xl font-black text-white tracking-tight drop-shadow-md">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-2xl font-black text-white tracking-tight drop-shadow-md truncate">
                     {barbearia.nome}
                   </h2>
                   <div className="flex items-center gap-2 mt-1">
@@ -74,13 +90,19 @@ export function MobileDetailsDrawer({
                     <span className="text-white/60 text-xs">• Premium</span>
                   </div>
                 </div>
-                <div className="w-16 h-16 shrink-0 rounded-[20px] overflow-hidden bg-black/20 border border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.4)]">
-                  <img src={barbearia.logoUrl} alt={barbearia.nome} className="w-full h-full object-cover" />
+
+                {/* ✅ Logo redondo */}
+                <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden bg-black/20 border-2 border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.4)]">
+                  <img
+                    src={barbearia.logoUrl}
+                    alt={barbearia.nome}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               </div>
 
               {/* Endereço */}
-              <div className="flex flex-col gap-3 mb-6">
+              <div className="mb-6">
                 <div className="p-3.5 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex items-start gap-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
                   <MapPin className="w-5 h-5 mt-0.5 text-[#a3e635] shrink-0" />
                   <span className="text-white/90 text-sm font-medium leading-relaxed">
@@ -89,22 +111,28 @@ export function MobileDetailsDrawer({
                 </div>
               </div>
 
-              {/* ✅ ETAs — agora com 3 cards: Carro, Trem/Metrô, A pé */}
+              {/* ✅ ETAs — 3 cards com formatação inteligente de tempo */}
               {routeEtas && (
                 <div className="grid grid-cols-3 gap-2.5 mb-6">
-                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                    <Car className="w-5 h-5 text-white/70 mb-1" strokeWidth={1.5} />
-                    <span className="text-white text-base font-bold">{Math.round(routeEtas.car)} min</span>
+                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center gap-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                    <Car className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                    <span className="text-white text-sm font-bold leading-tight text-center">
+                      {formatDuration(routeEtas.car)}
+                    </span>
                     <span className="text-white/50 text-[10px] uppercase tracking-wider font-semibold">Carro</span>
                   </div>
-                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                    <Train className="w-5 h-5 text-white/70 mb-1" strokeWidth={1.5} />
-                    <span className="text-white text-base font-bold">{Math.round(routeEtas.transit)} min</span>
+                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center gap-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                    <Train className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                    <span className="text-white text-sm font-bold leading-tight text-center">
+                      {formatDuration(routeEtas.transit)}
+                    </span>
                     <span className="text-white/50 text-[10px] uppercase tracking-wider font-semibold">Metrô</span>
                   </div>
-                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                    <Footprints className="w-5 h-5 text-white/70 mb-1" strokeWidth={1.5} />
-                    <span className="text-white text-base font-bold">{Math.round(routeEtas.walk)} min</span>
+                  <div className="p-4 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl flex flex-col items-center gap-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+                    <Footprints className="w-5 h-5 text-white/70" strokeWidth={1.5} />
+                    <span className="text-white text-sm font-bold leading-tight text-center">
+                      {formatDuration(routeEtas.walk)}
+                    </span>
                     <span className="text-white/50 text-[10px] uppercase tracking-wider font-semibold">A pé</span>
                   </div>
                 </div>
@@ -112,7 +140,7 @@ export function MobileDetailsDrawer({
 
               {/* Ações */}
               <div className="flex flex-col gap-3">
-                <button className="w-full py-4 rounded-[20px] bg-[#a3e635]/90 backdrop-blur-lg border border-[#a3e635] text-black font-extrabold text-base tracking-wide transition-all duration-200 active:scale-95 shadow-[0_8px_20px_rgba(163,230,53,0.3)]">
+                <button className="w-full  cursor-pointer py-4 rounded-[20px] bg-[#a3e635]/90 backdrop-blur-lg border border-[#a3e635] text-black font-extrabold text-base tracking-wide transition-all duration-200 active:scale-95 shadow-[0_8px_20px_rgba(163,230,53,0.3)]">
                   Agendar Horário
                 </button>
                 <button
