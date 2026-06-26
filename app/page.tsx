@@ -1,5 +1,7 @@
 "use client";
 
+import { ChevronLeft, Ghost, Navigation } from "lucide-react";
+import { createIcons, moveLeft } from 'lucide';
 import React, {
   useEffect,
   useRef,
@@ -16,10 +18,11 @@ import { listaCompletaBarbearias, Barbearia } from "./utils/barbeariasData";
 import { useGeolocation } from "./hooks/useGeolocation";
 import { initRouteLayers, initUserLocationLayers } from "./utils/mapLayers";
 import { fetchRoute } from "./utils/fetchRoute";
-
+import { MobileDetailsDrawer } from '@/components/navigation/drawer/mobiledetailsdrawer';
 // Componentes UI
 import RightSidebar from "@/components/navigation/rightsidebar";
 import MobileExplorationDrawer from "@/components/navigation/mobileexplorationdrawer";
+import { Button } from "@/components/ui/button";
 
 // ─── Haversine fora do componente: função pura, zero re-criação ──────────────
 function calcularDistanciaHaversine(
@@ -135,6 +138,7 @@ export default function MapaPage() {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, []);
+  
 
   // ─── Inicialização do mapa (executado uma única vez) ──────────────────────
   useEffect(() => {
@@ -465,50 +469,24 @@ export default function MapaPage() {
         ref={mapContainerRef}
         className="absolute inset-0 w-full h-full z-0"
       />
+     <Button 
+  variant="ghost" 
+  onClick={() => router.back()}
+  className="absolute w-12 h-12 top-6 left-4 z-50 bg-transparent backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white  hover:border-black transition-all active:scale-95 flex items-center justify-center"
+  aria-label="Voltar para a plataforma"
+>
+  <ChevronLeft className="w-5 h-5" strokeWidth={2.5} />
+</Button>
 
-      {/* FAB: Voltar (Superior Esquerdo) */}
-      <button
-        onClick={() => router.back()}
-        className="absolute top-6 left-4 z-40 bg-[#0c0c0c]/70 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black transition-all active:scale-95"
-        aria-label="Voltar para a plataforma"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polyline points="15 18 9 12 15 6" />
-        </svg>
-      </button>
-
-      {/* FAB: GPS (Superior Direito) */}
-      <button
+    
+      <Button
+      variant="ghost"
         onClick={centralizarNoUsuario}
-        className="absolute top-6 right-4 z-40 bg-[#0c0c0c]/70 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black hover:text-[#a3e635] transition-all active:scale-95"
+        className="absolute top-6 // bg-transparent // w-12 h-12 // right-4 z-40 backdrop-blur-xl p-3.5 rounded-full border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)] text-white hover:bg-black hover:border-black hover:text-[#a3e635] transition-all active:scale-95 flex items-center justify-center"
         aria-label="Encontrar minha localização"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <polygon points="3 11 22 2 13 21 11 13 3 11" />
-        </svg>
-      </button>
+        <Navigation className="w-5 h-5 fill-current" strokeWidth={2} />
+      </Button>
 
       {/* Portais dos markers */}
       {portalElements.map(({ id, element, barbearia }) =>
@@ -525,22 +503,22 @@ export default function MapaPage() {
       )}
 
       {/* Drawer mobile */}
-      <MobileExplorationDrawer
+      {/* Drawer unificado da lista (Este já existia) */}
+      <MobileExplorationDrawer 
         filiaisFiltradas={filiaisFiltradas}
         filtroTag={filtroTag}
         setFiltroTag={setFiltroTag}
         handleSelecionarUnidade={handleSelecionarUnidade}
         rotaAtivaId={rotaAtivaId}
       />
-
-      {/* Sidebar desktop */}
-      <div className="hidden lg:block">
-        <RightSidebar
+      {/* NOVO: Drawer Liquid Glass de Detalhes para Mobile */}
+      <div className="md:hidden">
+        <MobileDetailsDrawer
           barbearia={filialAtivaObj}
           routeEtas={routeEtas}
-          limparRota={limparRota}
+          onClose={limparRota}
         />
-      </div>
+      </div>  
     </main>
   );
 }
