@@ -1,67 +1,45 @@
-"use client";
+import { useState, useEffect } from 'react';
 
-import { useState, useEffect, useRef } from 'react';
-
-// Mock de toast (substitua pela sua biblioteca se desejar, ex: sonner ou react-hot-toast)
-const toast = {
-  info: (msg: string) => console.info(`[TOAST INFO] ${msg}`),
-  error: (msg: string) => console.error(`[TOAST ERROR] ${msg}`)
-};
+// Tipagem para as coordenadas
+type Coords = [number, number];
 
 export function useGeolocation() {
-  const [coords, setCoords] = useState<[number, number] | null>(null);
+  const [coords, setCoords] = useState<Coords | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [watching, setWatching] = useState(false);
-  const watchIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
-      setError('Geolocalização não suportada no seu navegador.');
+    // Verifica se o navegador/dispositivo suporta GPS
+    if (!navigator.geolocation) {
+      setError("Geolocalização não é suportada por este navegador.");
       return;
     }
 
-    const hasPermission = localStorage.getItem('geo_permission');
-    if (!hasPermission) {
-      toast.info('Precisamos da sua localização para traçar a melhor rota até as unidades.');
-      localStorage.setItem('geo_permission', 'requested');
-    }
-
-    setWatching(true);
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        setCoords([pos.coords.longitude, pos.coords.latitude]);
-        setError(null);
+    // Tenta observar a localização do usuário silenciosamente
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setCoords([position.coords.longitude, position.coords.latitude]);
+        setError(null); // Limpa erros antigos se conseguir ler
       },
       (err) => {
-        let msg = '';
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            msg = 'Permissão de localização negada. Ative no seu navegador.';
-            break;
-          case err.POSITION_UNAVAILABLE:
-            msg = 'Informação de localização indisponível no momento.';
-            break;
-          case err.TIMEOUT:
-            msg = 'Tempo limite esgotado ao buscar sua localização.';
-            break;
-          default:
-            msg = 'Erro desconhecido ao tentar buscar localização.';
+        // Se cair aqui no mobile testando localmente, é o bloqueio do HTTP
+        console.warn("[GPS] Erro ou bloqueio:", err.message);
+        
+        if (err.code === err.PERMISSION_DENIED) {
+          setError("Permissão negada. Clique no botão de GPS para autorizar.");
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setError("Sinal de GPS indisponível no momento.");
         }
-        setError(msg);
-        toast.error(msg);
       },
-      // CORREÇÃO AQUI: Aumentamos o timeout para 20 segundos (20000ms)
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 } 
+      {
+        enableHighAccuracy: true,
+        timeout: 10000, // Desiste após 10 segundos
+        maximumAge: 0   // Não usa cache antigo
+      }
     );
 
-    return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
-      setWatching(false);
-    };
+    // Limpeza da memória ao desmontar
+    return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  return { coords, error, watching };
+  return { coords, error };
 }
