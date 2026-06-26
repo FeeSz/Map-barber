@@ -44,7 +44,7 @@ export function MobileDetailsDrawer({
             fixed bottom-0 left-0 right-0 z-[70] flex flex-col outline-none
             md:mx-auto md:max-w-md
             h-[85vh] max-h-[85vh]
-            bg-black/35 backdrop-blur-[50px] saturate-[2]
+            bg-black/70 backdrop-[50px] saturate-[2]
             border-t border-white/20 rounded-t-[42px]
             shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),_0_-20px_50px_rgba(0,0,0,0.6)]
           "
@@ -67,7 +67,7 @@ export function MobileDetailsDrawer({
                   <span className="text-white/60 text-xs text-shadow-sm">• Premium</span>
                 </div>
               </div>
-              <div className="w-16 h-16 shrink-0 rounded-[20px] overflow-hidden bg-black/20 border border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.4)]">
+              <div className="w-16 h-16 shrink-0 rounded-[100%] overflow-hidden bg-black/20 border border-white/20 shadow-[0_8px_16px_rgba(0,0,0,0.4)]">
                 <img src={barbearia.logoUrl} alt={barbearia.nome} className="w-full h-full object-cover" />
               </div>
             </div>
